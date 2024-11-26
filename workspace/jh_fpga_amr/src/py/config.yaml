@@ -1,0 +1,281 @@
+models:
+  - name: vgglike_5f_5c_4re_4mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - conv3: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool3: {kernel_size: 2}
+      - conv4: {in_channels: 128, out_channels: 256, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool4: {kernel_size: 2}
+      - conv5: {in_channels: 256, out_channels: 512, kernel_size: 3, stride: 1, padding: 1}
+      - fc1: {in_features: null, out_features: 1024}
+      - fc2: {in_features: 1024, out_features: 512}
+      - fc3: {in_features: 512, out_features: 256}
+      - fc4: {in_features: 256, out_features: 128}
+      - fc5: {in_features: 128, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.003
+        num_epochs: 100
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.0035
+        num_epochs: 100
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.0035
+        num_epochs: 1000
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.0035
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_5f_4c_4re_4mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - conv3: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool3: {kernel_size: 2}
+      - conv4: {in_channels: 128, out_channels: 256, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool4: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 1024}
+      - fc2: {in_features: 1024, out_features: 512}
+      - fc3: {in_features: 512, out_features: 256}
+      - fc4: {in_features: 256, out_features: 128}
+      - fc5: {in_features: 128, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_5f_3c_4re_3mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - conv3: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool3: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 1024}
+      - fc2: {in_features: 1024, out_features: 512}
+      - fc3: {in_features: 512, out_features: 256}
+      - fc4: {in_features: 256, out_features: 128}
+      - fc5: {in_features: 128, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_3f_3c_2re_3mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - conv3: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool3: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 1024}
+      - fc2: {in_features: 1024, out_features: 512}
+      - fc3: {in_features: 512, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_3f_2c_2re_2mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 1024}
+      - fc2: {in_features: 1024, out_features: 512}
+      - fc3: {in_features: 512, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_2f_2c_2re_2mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - conv2: {in_channels: 32, out_channels: 64, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool2: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 512}
+      - fc2: {in_features: 512, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
+
+  - name: vgglike_2f_1c_1re_1mp
+    layers:
+      - conv1: {in_channels: 2, out_channels: 32, kernel_size: 3, stride: 1, padding: 1}
+      - maxpool1: {kernel_size: 2}
+      - fc1: {in_features: null, out_features: 512}
+      - fc2: {in_features: 512, out_features: 9}
+    quantization:
+      - bits: 0
+        learning_rate: 0.0005
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1000
+      - bits: 8
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.04
+        num_epochs: 1200
+      - bits: 6
+        learning_rate: 0.0003
+        weight_decay: 0.0001
+        loss_threshold: 0.035
+        num_epochs: 1500
+      - bits: 4
+        learning_rate: 0.0002
+        weight_decay: 0.0001
+        loss_threshold: 0.025
+        num_epochs: 2000
+    pruning:
+      - percentage: 0
+        prune_loss_threshold: 0.04
+      - percentage: 0.2
+        prune_loss_threshold: 0.05
+      - percentage: 0.3
+        prune_loss_threshold: 0.06
