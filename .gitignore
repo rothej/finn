@@ -96,3 +96,7 @@ MANIFEST
 
 # downloaded dep repos
 /deps/
+
+# Extra ignores.
+.Trash-1000/
+*:Zone.Identifier*
