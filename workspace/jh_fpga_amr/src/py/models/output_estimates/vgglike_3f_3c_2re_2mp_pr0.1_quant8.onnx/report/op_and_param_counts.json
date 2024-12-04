@@ -1,0 +1,12 @@
+{
+  "FMPadding_rtl_0": {},
+  "ConvolutionInputGenerator_rtl_0": {},
+  "MVAU_rtl_0": {
+    "op_mac_8bx8b": 6144,
+    "param_weight_8b": 192
+  },
+  "total": {
+    "op_mac_8bx8b": 6144.0,
+    "param_weight_8b": 192.0
+  }
+}
