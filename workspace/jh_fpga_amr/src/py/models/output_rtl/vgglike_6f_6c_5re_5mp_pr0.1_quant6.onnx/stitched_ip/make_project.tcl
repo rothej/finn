@@ -1,40 +1,40 @@
-create_project finn_vivado_stitch_proj /tmp/finn_dev_rothej/vivado_stitch_proj_zrwzns28 -part xc7z020clg400-1
+create_project finn_vivado_stitch_proj /tmp/finn_dev_rothej/vivado_stitch_proj_nfp1_9js -part xc7z020clg400-1
 set_msg_config -id {[BD 41-1753]} -suppress
-set_property ip_repo_paths [list $::env(FINN_ROOT)/finn-rtllib/memstream /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_nn67aw8w /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_saekqjdy /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1__mjcrbum /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_r3is3kcs /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_8ubcwpmk /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_bz40h5rr /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_yz2gq3p8 /tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_g_gl8bva /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_048tjq_8] [current_project]
+set_property ip_repo_paths [list $::env(FINN_ROOT)/finn-rtllib/memstream /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_bohdkqed /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_2errhcgj /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1_zdphgtg2 /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_yurfxo0f /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_blpm4_1v /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_xxlmnjtx /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_kaqa5j84 /tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_5gfylmbt /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_ih1df1b3] [current_project]
 update_ip_catalog
 create_bd_design "finn_design"
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_nn67aw8w/Q_srl.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_nn67aw8w/StreamingFIFO_rtl_0.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_bohdkqed/Q_srl.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_0_bohdkqed/StreamingFIFO_rtl_0.v
 create_bd_cell -type module -reference StreamingFIFO_rtl_0 StreamingFIFO_rtl_0
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_saekqjdy/fmpadding_axi.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_saekqjdy/fmpadding.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_saekqjdy/axi2we.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_saekqjdy/FMPadding_rtl_0.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_2errhcgj/fmpadding_axi.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_2errhcgj/fmpadding.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_2errhcgj/axi2we.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_FMPadding_rtl_0_2errhcgj/FMPadding_rtl_0.v
 create_bd_cell -type module -reference FMPadding_rtl_0 FMPadding_rtl_0
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1__mjcrbum/Q_srl.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1__mjcrbum/StreamingFIFO_rtl_1.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1_zdphgtg2/Q_srl.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_1_zdphgtg2/StreamingFIFO_rtl_1.v
 create_bd_cell -type module -reference StreamingFIFO_rtl_1 StreamingFIFO_rtl_1
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_r3is3kcs/swg_pkg.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_r3is3kcs/ConvolutionInputGenerator_rtl_0_wrapper.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_r3is3kcs/ConvolutionInputGenerator_rtl_0_impl.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_r3is3kcs/swg_common.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_yurfxo0f/swg_pkg.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_yurfxo0f/ConvolutionInputGenerator_rtl_0_wrapper.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_yurfxo0f/ConvolutionInputGenerator_rtl_0_impl.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_ConvolutionInputGenerator_rtl_0_yurfxo0f/swg_common.sv
 create_bd_cell -type module -reference ConvolutionInputGenerator_rtl_0 ConvolutionInputGenerator_rtl_0
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_8ubcwpmk/Q_srl.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_8ubcwpmk/StreamingFIFO_rtl_2.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_blpm4_1v/Q_srl.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_2_blpm4_1v/StreamingFIFO_rtl_2.v
 create_bd_cell -type module -reference StreamingFIFO_rtl_2 StreamingFIFO_rtl_2
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_bz40h5rr/dwc_axi.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_bz40h5rr/dwc.sv
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_bz40h5rr/StreamingDataWidthConverter_rtl_0.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_xxlmnjtx/dwc_axi.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_xxlmnjtx/dwc.sv
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingDataWidthConverter_rtl_0_xxlmnjtx/StreamingDataWidthConverter_rtl_0.v
 create_bd_cell -type module -reference StreamingDataWidthConverter_rtl_0 StreamingDataWidthConverter_rtl_0
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_yz2gq3p8/Q_srl.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_yz2gq3p8/StreamingFIFO_rtl_3.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_kaqa5j84/Q_srl.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_3_kaqa5j84/StreamingFIFO_rtl_3.v
 create_bd_cell -type module -reference StreamingFIFO_rtl_3 StreamingFIFO_rtl_3
 create_bd_cell -type hier MVAU_rtl_0
 create_bd_pin -dir I -type clk /MVAU_rtl_0/ap_clk
 create_bd_pin -dir I -type rst /MVAU_rtl_0/ap_rst_n
 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 /MVAU_rtl_0/out_V
 create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 /MVAU_rtl_0/in0_V
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_g_gl8bva/MVAU_rtl_0_wrapper.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_5gfylmbt/MVAU_rtl_0_wrapper.v
 add_files -norecurse /home/rothej/finn/finn-rtllib/mvu/mvu_vvu_axi.sv
 add_files -norecurse /home/rothej/finn/finn-rtllib/mvu/replay_buffer.sv
 add_files -norecurse /home/rothej/finn/finn-rtllib/mvu/mvu_4sx4u.sv
@@ -42,7 +42,7 @@ add_files -norecurse /home/rothej/finn/finn-rtllib/mvu/mvu_vvu_8sx9_dsp58.sv
 add_files -norecurse /home/rothej/finn/finn-rtllib/mvu/mvu_8sx8u_dsp48.sv
 create_bd_cell -type hier -reference MVAU_rtl_0 /MVAU_rtl_0/MVAU_rtl_0
 create_bd_cell -type ip -vlnv amd.com:finn:memstream:1.0 /MVAU_rtl_0/MVAU_rtl_0_wstrm
-set_property -dict [list CONFIG.DEPTH {2} CONFIG.WIDTH {576} CONFIG.INIT_FILE {/tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_g_gl8bva/memblock.dat} CONFIG.RAM_STYLE {auto} ] [get_bd_cells /MVAU_rtl_0/MVAU_rtl_0_wstrm]
+set_property -dict [list CONFIG.DEPTH {2} CONFIG.WIDTH {576} CONFIG.INIT_FILE {/tmp/finn_dev_rothej/code_gen_ipgen_MVAU_rtl_0_5gfylmbt/memblock.dat} CONFIG.RAM_STYLE {auto} ] [get_bd_cells /MVAU_rtl_0/MVAU_rtl_0_wstrm]
 connect_bd_intf_net [get_bd_intf_pins MVAU_rtl_0/MVAU_rtl_0_wstrm/m_axis_0] [get_bd_intf_pins MVAU_rtl_0/MVAU_rtl_0/weights_V]
 connect_bd_net [get_bd_pins MVAU_rtl_0/ap_rst_n] [get_bd_pins MVAU_rtl_0/MVAU_rtl_0_wstrm/ap_rst_n]
 connect_bd_net [get_bd_pins MVAU_rtl_0/ap_clk] [get_bd_pins MVAU_rtl_0/MVAU_rtl_0_wstrm/ap_clk]
@@ -51,8 +51,8 @@ connect_bd_net [get_bd_pins MVAU_rtl_0/ap_clk] [get_bd_pins MVAU_rtl_0/MVAU_rtl_
 connect_bd_intf_net [get_bd_intf_pins MVAU_rtl_0/in0_V] [get_bd_intf_pins MVAU_rtl_0/MVAU_rtl_0/in0_V]
 connect_bd_intf_net [get_bd_intf_pins MVAU_rtl_0/out_V] [get_bd_intf_pins MVAU_rtl_0/MVAU_rtl_0/out_V]
 save_bd_design
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_048tjq_8/Q_srl.v
-add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_048tjq_8/StreamingFIFO_rtl_4.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_ih1df1b3/Q_srl.v
+add_files -norecurse /tmp/finn_dev_rothej/code_gen_ipgen_StreamingFIFO_rtl_4_ih1df1b3/StreamingFIFO_rtl_4.v
 create_bd_cell -type module -reference StreamingFIFO_rtl_4 StreamingFIFO_rtl_4
 make_bd_pins_external [get_bd_pins StreamingFIFO_rtl_0/ap_clk]
 set_property name ap_clk [get_bd_ports ap_clk_0]
@@ -89,10 +89,10 @@ set_property name m_axis_0 [get_bd_intf_ports out_V_0]
 set_property CONFIG.FREQ_HZ 100000000 [get_bd_ports /ap_clk]
 validate_bd_design
 save_bd_design
-make_wrapper -files [get_files /tmp/finn_dev_rothej/vivado_stitch_proj_zrwzns28/finn_vivado_stitch_proj.srcs/sources_1/bd/finn_design/finn_design.bd] -top
-add_files -norecurse /tmp/finn_dev_rothej/vivado_stitch_proj_zrwzns28/finn_vivado_stitch_proj.srcs/sources_1/bd/finn_design/hdl/finn_design_wrapper.v
+make_wrapper -files [get_files /tmp/finn_dev_rothej/vivado_stitch_proj_nfp1_9js/finn_vivado_stitch_proj.srcs/sources_1/bd/finn_design/finn_design.bd] -top
+add_files -norecurse /tmp/finn_dev_rothej/vivado_stitch_proj_nfp1_9js/finn_vivado_stitch_proj.srcs/sources_1/bd/finn_design/hdl/finn_design_wrapper.v
 set_property top finn_design_wrapper [current_fileset]
-ipx::package_project -root_dir /tmp/finn_dev_rothej/vivado_stitch_proj_zrwzns28/ip -vendor xilinx_finn -library finn -taxonomy /UserIP -module finn_design -import_files
+ipx::package_project -root_dir /tmp/finn_dev_rothej/vivado_stitch_proj_nfp1_9js/ip -vendor xilinx_finn -library finn -taxonomy /UserIP -module finn_design -import_files
 set_property ipi_drc {ignore_freq_hz true} [ipx::current_core]
 ipx::remove_segment -quiet m_axi_gmem0:APERTURE_0 [ipx::get_address_spaces m_axi_gmem0 -of_objects [ipx::current_core]]
 set_property core_revision 2 [ipx::find_open_core xilinx_finn:finn:finn_design:1.0]
@@ -171,6 +171,6 @@ close $ifile
 close $ofile
 
 set all_v_files [get_files -filter {USED_IN_SYNTHESIS == 1 && (FILE_TYPE == Verilog || FILE_TYPE == SystemVerilog || FILE_TYPE =="Verilog Header")}]
-set fp [open /tmp/finn_dev_rothej/vivado_stitch_proj_zrwzns28/all_verilog_srcs.txt w]
+set fp [open /tmp/finn_dev_rothej/vivado_stitch_proj_nfp1_9js/all_verilog_srcs.txt w]
 foreach vf $all_v_files {puts $fp $vf}
 close $fp

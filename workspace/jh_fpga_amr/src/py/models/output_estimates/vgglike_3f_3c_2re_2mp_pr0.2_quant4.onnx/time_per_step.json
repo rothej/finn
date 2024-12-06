@@ -1,12 +1,12 @@
 {
-  "step_qonnx_to_finn": 5.602836608886719e-05,
-  "step_tidy_up": 0.025402545928955078,
-  "step_streamline": 1.1792676448822021,
-  "step_convert_to_hw": 0.0373384952545166,
-  "step_create_dataflow_partition": 0.016832828521728516,
-  "step_specialize_layers": 0.0015461444854736328,
-  "step_target_fps_parallelization": 0.0033140182495117188,
-  "step_apply_folding_config": 3.0994415283203125e-06,
-  "step_minimize_bit_width": 0.0021321773529052734,
-  "step_generate_estimate_reports": 0.006307363510131836
+  "step_qonnx_to_finn": 4.4345855712890625e-05,
+  "step_tidy_up": 0.02689504623413086,
+  "step_streamline": 1.1951639652252197,
+  "step_convert_to_hw": 0.03723573684692383,
+  "step_create_dataflow_partition": 0.007506608963012695,
+  "step_specialize_layers": 0.0016093254089355469,
+  "step_target_fps_parallelization": 0.002879619598388672,
+  "step_apply_folding_config": 3.337860107421875e-06,
+  "step_minimize_bit_width": 0.0018000602722167969,
+  "step_generate_estimate_reports": 0.006010532379150391
 }

@@ -1,4 +1,4 @@
 #!/bin/bash 
-cd /tmp/finn_dev_rothej/vivado_stitch_proj_mnigwc_f
+cd /tmp/finn_dev_rothej/vivado_stitch_proj_cfk107ej
 vivado -mode batch -source make_project.tcl
 cd /home/rothej/finn

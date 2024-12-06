@@ -1,19 +1,19 @@
 {
-  "vivado_proj_folder": "/tmp/finn_dev_rothej/synth_out_of_context_2qp9b6x1/results_finn_design_wrapper",
-  "LUT": 2320.0,
-  "LUTRAM": 212.0,
-  "FF": 4357.0,
+  "vivado_proj_folder": "/tmp/finn_dev_rothej/synth_out_of_context_zztec0_q/results_finn_design_wrapper",
+  "LUT": 2333.0,
+  "LUTRAM": 220.0,
+  "FF": 4385.0,
   "DSP": 0.0,
   "BRAM": 0.0,
   "BRAM_18K": 0.0,
   "BRAM_36K": 0.0,
   "URAM": 0.0,
   "Carry": 205.0,
-  "WNS": 2.231,
-  "Delay": 2.231,
+  "WNS": 1.862,
+  "Delay": 1.862,
   "vivado_version": 2022.2,
   "vivado_build_no": 3671981.0,
   "": 0,
-  "fmax_mhz": 128.71669455528382,
-  "estimated_throughput_fps": 1313435.658727386
+  "fmax_mhz": 122.8803145736053,
+  "estimated_throughput_fps": 1253880.760955156
 }
