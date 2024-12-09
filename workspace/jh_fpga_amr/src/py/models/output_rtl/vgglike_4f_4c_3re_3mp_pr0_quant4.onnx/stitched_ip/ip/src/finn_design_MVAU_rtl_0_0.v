@@ -52,7 +52,7 @@
 
 (* X_CORE_INFO = "MVAU_rtl_0,Vivado 2022.2" *)
 (* CHECK_LICENSE_TYPE = "finn_design_MVAU_rtl_0_0,MVAU_rtl_0,{}" *)
-(* CORE_GENERATION_INFO = "finn_design_MVAU_rtl_0_0,MVAU_rtl_0,{x_ipProduct=Vivado 2022.2,x_ipVendor=xilinx.com,x_ipLibrary=module_ref,x_ipName=MVAU_rtl_0,x_ipVersion=1.0,x_ipCoreRevision=1,x_ipLanguage=VERILOG,x_ipSimLanguage=MIXED,IS_MVU=1,COMPUTE_CORE=mvu_4sx4u_dsp48e1,PUMPED_COMPUTE=0,MW=6,MH=32,PE=16,SIMD=6,ACTIVATION_WIDTH=4,WEIGHT_WIDTH=4,ACCU_WIDTH=16,NARROW_WEIGHTS=1,SIGNED_ACTIVATIONS=1,SEGMENTLEN=2,FORCE_BEHAVIORAL=0,WEIGHT_STREAM_WIDTH_BA=384,INPUT_STREAM_WIDTH_BA=24,OUTPUT_STREAM_WIDTH_BA=256}" *)
+(* CORE_GENERATION_INFO = "finn_design_MVAU_rtl_0_0,MVAU_rtl_0,{x_ipProduct=Vivado 2022.2,x_ipVendor=xilinx.com,x_ipLibrary=module_ref,x_ipName=MVAU_rtl_0,x_ipVersion=1.0,x_ipCoreRevision=1,x_ipLanguage=VERILOG,x_ipSimLanguage=MIXED,IS_MVU=1,COMPUTE_CORE=mvu_4sx4u_dsp48e1,PUMPED_COMPUTE=0,MW=6,MH=32,PE=16,SIMD=6,ACTIVATION_WIDTH=4,WEIGHT_WIDTH=4,ACCU_WIDTH=9,NARROW_WEIGHTS=1,SIGNED_ACTIVATIONS=1,SEGMENTLEN=2,FORCE_BEHAVIORAL=0,WEIGHT_STREAM_WIDTH_BA=384,INPUT_STREAM_WIDTH_BA=24,OUTPUT_STREAM_WIDTH_BA=144}" *)
 (* IP_DEFINITION_SOURCE = "module_ref" *)
 (* DowngradeIPIdentifiedWarnings = "yes" *)
 module finn_design_MVAU_rtl_0_0 (
@@ -90,10 +90,10 @@ input wire in0_V_TVALID;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 in0_V TREADY" *)
 output wire in0_V_TREADY;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TDATA" *)
-output wire [255 : 0] out_V_TDATA;
+output wire [143 : 0] out_V_TDATA;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TVALID" *)
 output wire out_V_TVALID;
-(* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME out_V, TDATA_NUM_BYTES 32, TDEST_WIDTH 0, TID_WIDTH 0, TUSER_WIDTH 0, HAS_TREADY 1, HAS_TSTRB 0, HAS_TKEEP 0, HAS_TLAST 0, FREQ_HZ 100000000, PHASE 0.0, CLK_DOMAIN finn_design_ap_clk_0, LAYERED_METADATA undef, INSERT_VIP 0" *)
+(* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME out_V, TDATA_NUM_BYTES 18, TDEST_WIDTH 0, TID_WIDTH 0, TUSER_WIDTH 0, HAS_TREADY 1, HAS_TSTRB 0, HAS_TKEEP 0, HAS_TLAST 0, FREQ_HZ 100000000, PHASE 0.0, CLK_DOMAIN finn_design_ap_clk_0, LAYERED_METADATA undef, INSERT_VIP 0" *)
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TREADY" *)
 input wire out_V_TREADY;
 
@@ -107,14 +107,14 @@ input wire out_V_TREADY;
     .SIMD(6),
     .ACTIVATION_WIDTH(4),
     .WEIGHT_WIDTH(4),
-    .ACCU_WIDTH(16),
+    .ACCU_WIDTH(9),
     .NARROW_WEIGHTS(1),
     .SIGNED_ACTIVATIONS(1),
     .SEGMENTLEN(2),
     .FORCE_BEHAVIORAL(0),
     .WEIGHT_STREAM_WIDTH_BA(384),
     .INPUT_STREAM_WIDTH_BA(24),
-    .OUTPUT_STREAM_WIDTH_BA(256)
+    .OUTPUT_STREAM_WIDTH_BA(144)
   ) inst (
     .ap_clk(ap_clk),
     .ap_rst_n(ap_rst_n),

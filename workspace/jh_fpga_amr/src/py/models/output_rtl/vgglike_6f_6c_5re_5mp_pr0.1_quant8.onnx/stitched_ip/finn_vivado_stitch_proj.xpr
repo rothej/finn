@@ -3,10 +3,10 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/tmp/finn_dev_rothej/vivado_stitch_proj_45z_gyl4/finn_vivado_stitch_proj.xpr">
+<Project Version="7" Minor="61" Path="/tmp/finn_dev_rothej/vivado_stitch_proj_oe8uxlmp/finn_vivado_stitch_proj.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="0a59e192e7e64805935e00468739012d"/>
+    <Option Name="Id" Val="a6f20245b3614e0f8c8f6eb2eb4f7fbc"/>
     <Option Name="Part" Val="xc7z020clg400-1"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -47,15 +47,17 @@
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="ProjectType" Val="Default"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../../../home/rothej/finn/finn-rtllib/memstream"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_6n5zj172"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_3jdv9a9x"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_21ng_lo7"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_ldro8okg"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_zrvfznqx"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_irdf3s8r"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_wed7g8rk"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_MVAU_rtl_0_gojzx0ke"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_simps9op"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_xv_lee1y"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_7nyzbw4g"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_x9x4u_lw"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_228yidjq"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_rtgn_grv"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_8jw_20xp"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_o77glb7h"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_MVAU_rtl_0_jcg9dgwn"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_868nwpug"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_Thresholding_rtl_0_nyv730hr"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_5_for8lohb"/>
     <Option Name="IPOutputRepo" Val="$PCACHEDIR/ip"/>
     <Option Name="IPDefaultOutputPath" Val="$PGENDIR/sources_1"/>
     <Option Name="IPCachePermission" Val="read"/>
@@ -105,140 +107,140 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_6n5zj172/Q_srl.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_xv_lee1y/Q_srl.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_6n5zj172/StreamingFIFO_rtl_0.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_0_xv_lee1y/StreamingFIFO_rtl_0.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_3jdv9a9x/fmpadding_axi.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_7nyzbw4g/fmpadding_axi.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_3jdv9a9x/fmpadding.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_7nyzbw4g/fmpadding.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_3jdv9a9x/axi2we.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_7nyzbw4g/axi2we.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_3jdv9a9x/FMPadding_rtl_0.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_FMPadding_rtl_0_7nyzbw4g/FMPadding_rtl_0.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_21ng_lo7/Q_srl.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_x9x4u_lw/Q_srl.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_21ng_lo7/StreamingFIFO_rtl_1.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_1_x9x4u_lw/StreamingFIFO_rtl_1.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_ldro8okg/swg_pkg.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_228yidjq/swg_pkg.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_ldro8okg/ConvolutionInputGenerator_rtl_0_wrapper.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_228yidjq/ConvolutionInputGenerator_rtl_0_wrapper.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_ldro8okg/ConvolutionInputGenerator_rtl_0_impl.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_228yidjq/ConvolutionInputGenerator_rtl_0_impl.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_ldro8okg/swg_common.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_ConvolutionInputGenerator_rtl_0_228yidjq/swg_common.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_zrvfznqx/Q_srl.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_rtgn_grv/Q_srl.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_zrvfznqx/StreamingFIFO_rtl_2.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_2_rtgn_grv/StreamingFIFO_rtl_2.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_irdf3s8r/dwc_axi.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_8jw_20xp/dwc_axi.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_irdf3s8r/dwc.sv">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_8jw_20xp/dwc.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_irdf3s8r/StreamingDataWidthConverter_rtl_0.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingDataWidthConverter_rtl_0_8jw_20xp/StreamingDataWidthConverter_rtl_0.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_wed7g8rk/Q_srl.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_o77glb7h/Q_srl.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_wed7g8rk/StreamingFIFO_rtl_3.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_3_o77glb7h/StreamingFIFO_rtl_3.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_MVAU_rtl_0_gojzx0ke/MVAU_rtl_0_wrapper.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_MVAU_rtl_0_jcg9dgwn/MVAU_rtl_0_wrapper.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -280,14 +282,56 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_simps9op/Q_srl.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_868nwpug/Q_srl.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_simps9op/StreamingFIFO_rtl_4.v">
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_4_868nwpug/StreamingFIFO_rtl_4.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ip/verilog/rtl_ops/Thresholding_rtl_0/axilite_if.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ip/verilog/rtl_ops/Thresholding_rtl_0/thresholding.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ip/verilog/rtl_ops/Thresholding_rtl_0/thresholding_axi.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ip/verilog/rtl_ops/Thresholding_rtl_0/Thresholding_rtl_0_axi_wrapper.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_5_for8lohb/Q_srl.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../code_gen_ipgen_StreamingFIFO_rtl_5_for8lohb/StreamingFIFO_rtl_5.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>

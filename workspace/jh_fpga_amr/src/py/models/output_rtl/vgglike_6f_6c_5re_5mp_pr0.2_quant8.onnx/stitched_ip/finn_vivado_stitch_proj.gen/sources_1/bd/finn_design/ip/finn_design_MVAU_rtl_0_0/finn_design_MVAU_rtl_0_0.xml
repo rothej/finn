@@ -270,7 +270,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>TDATA_NUM_BYTES</spirit:name>
-          <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.OUT_V.TDATA_NUM_BYTES">48</spirit:value>
+          <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.OUT_V.TDATA_NUM_BYTES">34</spirit:value>
           <spirit:vendorExtensions>
             <xilinx:parameterInfo>
               <xilinx:parameterUsage>none</xilinx:parameterUsage>
@@ -580,7 +580,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:601c8d36</spirit:value>
+            <spirit:value>9:7a856d01</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -591,7 +591,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:601c8d36</spirit:value>
+            <spirit:value>9:7a856d01</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -607,11 +607,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Thu Dec 05 17:04:14 UTC 2024</spirit:value>
+            <spirit:value>Mon Dec 09 17:21:49 UTC 2024</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:601c8d36</spirit:value>
+            <spirit:value>9:7a856d01</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -623,7 +623,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:8fa8825c</spirit:value>
+            <spirit:value>9:b62a9b94</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -639,11 +639,11 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Thu Dec 05 17:04:14 UTC 2024</spirit:value>
+            <spirit:value>Mon Dec 09 17:21:49 UTC 2024</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>outputProductCRC</spirit:name>
-            <spirit:value>9:8fa8825c</spirit:value>
+            <spirit:value>9:b62a9b94</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -772,7 +772,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.OUTPUT_STREAM_WIDTH_BA&apos;)) - 1)">383</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.OUTPUT_STREAM_WIDTH_BA&apos;)) - 1)">271</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -863,7 +863,7 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>ACCU_WIDTH</spirit:name>
         <spirit:displayName>Accu Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ACCU_WIDTH">24</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ACCU_WIDTH">17</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>NARROW_WEIGHTS</spirit:name>
@@ -898,7 +898,7 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>OUTPUT_STREAM_WIDTH_BA</spirit:name>
         <spirit:displayName>Output Stream Width Ba</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.OUTPUT_STREAM_WIDTH_BA" spirit:dependency="((((spirit:decode(id(&apos;MODELPARAM_VALUE.PE&apos;)) * spirit:decode(id(&apos;MODELPARAM_VALUE.ACCU_WIDTH&apos;))) + 7) / 8) * 8)">384</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.OUTPUT_STREAM_WIDTH_BA" spirit:dependency="((((spirit:decode(id(&apos;MODELPARAM_VALUE.PE&apos;)) * spirit:decode(id(&apos;MODELPARAM_VALUE.ACCU_WIDTH&apos;))) + 7) / 8) * 8)">272</spirit:value>
       </spirit:modelParameter>
     </spirit:modelParameters>
   </spirit:model>
@@ -977,7 +977,7 @@
     <spirit:parameter>
       <spirit:name>ACCU_WIDTH</spirit:name>
       <spirit:displayName>Accu Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ACCU_WIDTH">24</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ACCU_WIDTH">17</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>NARROW_WEIGHTS</spirit:name>
@@ -1012,7 +1012,7 @@
     <spirit:parameter>
       <spirit:name>OUTPUT_STREAM_WIDTH_BA</spirit:name>
       <spirit:displayName>Output Stream Width Ba</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.OUTPUT_STREAM_WIDTH_BA">384</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.OUTPUT_STREAM_WIDTH_BA">272</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>

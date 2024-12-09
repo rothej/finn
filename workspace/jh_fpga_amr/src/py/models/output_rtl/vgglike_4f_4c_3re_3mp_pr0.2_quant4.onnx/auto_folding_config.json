@@ -15,5 +15,11 @@
     "resType": "auto",
     "mem_mode": "internal_decoupled",
     "runtime_writeable_weights": 0
+  },
+  "Thresholding_rtl_0": {
+    "PE": 16,
+    "runtime_writeable_weights": 0,
+    "depth_trigger_uram": 0,
+    "depth_trigger_bram": 0
   }
 }

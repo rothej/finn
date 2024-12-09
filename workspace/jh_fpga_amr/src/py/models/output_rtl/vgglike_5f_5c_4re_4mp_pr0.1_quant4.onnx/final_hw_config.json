@@ -96,5 +96,28 @@
     "outFIFODepths": [
       0
     ]
+  },
+  "Thresholding_rtl_0": {
+    "PE": 16,
+    "runtime_writeable_weights": 0,
+    "inFIFODepths": [
+      2
+    ],
+    "outFIFODepths": [
+      2
+    ],
+    "depth_trigger_uram": 0,
+    "depth_trigger_bram": 0
+  },
+  "StreamingFIFO_rtl_5": {
+    "ram_style": "auto",
+    "depth": 2,
+    "impl_style": "rtl",
+    "inFIFODepths": [
+      0
+    ],
+    "outFIFODepths": [
+      0
+    ]
   }
 }

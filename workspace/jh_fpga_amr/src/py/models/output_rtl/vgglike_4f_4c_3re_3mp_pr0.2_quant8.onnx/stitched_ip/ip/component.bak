@@ -100,7 +100,7 @@
           <spirit:physicalPort>
             <spirit:name>m_axis_0_tdata</spirit:name>
             <spirit:vector>
-              <spirit:left spirit:format="long">383</spirit:left>
+              <spirit:left spirit:format="long">127</spirit:left>
               <spirit:right spirit:format="long">0</spirit:right>
             </spirit:vector>
           </spirit:physicalPort>
@@ -125,7 +125,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>TDATA_NUM_BYTES</spirit:name>
-          <spirit:value spirit:resolve="user" spirit:id="BUSIFPARAM_VALUE.M_AXIS_0.TDATA_NUM_BYTES">48</spirit:value>
+          <spirit:value spirit:resolve="user" spirit:id="BUSIFPARAM_VALUE.M_AXIS_0.TDATA_NUM_BYTES">16</spirit:value>
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>TDEST_WIDTH</spirit:name>
@@ -247,7 +247,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>65d1b519</spirit:value>
+            <spirit:value>0fe67af3</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -266,7 +266,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>09718012</spirit:value>
+            <spirit:value>7ff6dc66</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -281,7 +281,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>4ac019ed</spirit:value>
+            <spirit:value>b9b9307b</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -346,7 +346,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">383</spirit:left>
+            <spirit:left spirit:format="long">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -599,6 +599,37 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/axilite_if.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/thresholding.sv</spirit:name>
+        <spirit:fileType>systemVerilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/thresholding_axi.sv</spirit:name>
+        <spirit:fileType>systemVerilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/Thresholding_rtl_0_axi_wrapper.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/finn_design_Thresholding_rtl_0_0.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/StreamingFIFO_rtl_5.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/finn_design_StreamingFIFO_rtl_5_0.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/finn_design_ooc.xdc</spirit:name>
         <spirit:userFileType>xdc</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
@@ -608,7 +639,7 @@
       <spirit:file>
         <spirit:name>src/finn_design.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_ca1aa164</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_4cdd4dc3</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -791,6 +822,37 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/axilite_if.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/thresholding.sv</spirit:name>
+        <spirit:fileType>systemVerilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/thresholding_axi.sv</spirit:name>
+        <spirit:fileType>systemVerilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>verilog/rtl_ops/Thresholding_rtl_0/Thresholding_rtl_0_axi_wrapper.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>sim/finn_design_Thresholding_rtl_0_0.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/StreamingFIFO_rtl_5.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>sim/finn_design_StreamingFIFO_rtl_5_0.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>sim/finn_design.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
@@ -855,7 +917,7 @@
       <xilinx:displayName>finn_design_v1_0</xilinx:displayName>
       <xilinx:definitionSource>IPI</xilinx:definitionSource>
       <xilinx:coreRevision>2</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2024-12-05T18:04:08Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2024-12-09T18:30:02Z</xilinx:coreCreationDateTime>
       <xilinx:configElementInfos>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.CLK.AP_CLK.FREQ_HZ" xilinx:valueSource="user"/>
         <xilinx:configElementInfo xilinx:referenceId="BUSIFPARAM_VALUE.M_AXIS_0.FREQ_HZ" xilinx:valuePermission="bd"/>
@@ -884,9 +946,9 @@
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2022.2</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f6831f73"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c95da676"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="795a8c92"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="b1a80d13"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="f957bfdc"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="70a0e3ce"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="c89a5ebc"/>
       <xilinx:targetDRCs>
         <xilinx:targetDRC xilinx:tool="ipi">

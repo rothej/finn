@@ -89,10 +89,10 @@ input wire in0_V_TVALID;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 in0_V TREADY" *)
 output wire in0_V_TREADY;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TDATA" *)
-output wire [383 : 0] out_V_TDATA;
+output wire [271 : 0] out_V_TDATA;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TVALID" *)
 output wire out_V_TVALID;
-(* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME out_V, TDATA_NUM_BYTES 48, TDEST_WIDTH 0, TID_WIDTH 0, TUSER_WIDTH 0, HAS_TREADY 1, HAS_TSTRB 0, HAS_TKEEP 0, HAS_TLAST 0, FREQ_HZ 100000000, PHASE 0.0, CLK_DOMAIN finn_design_ap_clk_0, LAYERED_METADATA undef, INSERT_VIP 0" *)
+(* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME out_V, TDATA_NUM_BYTES 34, TDEST_WIDTH 0, TID_WIDTH 0, TUSER_WIDTH 0, HAS_TREADY 1, HAS_TSTRB 0, HAS_TKEEP 0, HAS_TLAST 0, FREQ_HZ 100000000, PHASE 0.0, CLK_DOMAIN finn_design_ap_clk_0, LAYERED_METADATA undef, INSERT_VIP 0" *)
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 out_V TREADY" *)
 input wire out_V_TREADY;
 
@@ -106,14 +106,14 @@ input wire out_V_TREADY;
     .SIMD(6),
     .ACTIVATION_WIDTH(8),
     .WEIGHT_WIDTH(8),
-    .ACCU_WIDTH(24),
+    .ACCU_WIDTH(17),
     .NARROW_WEIGHTS(1),
     .SIGNED_ACTIVATIONS(1),
     .SEGMENTLEN(2),
     .FORCE_BEHAVIORAL(0),
     .WEIGHT_STREAM_WIDTH_BA(768),
     .INPUT_STREAM_WIDTH_BA(48),
-    .OUTPUT_STREAM_WIDTH_BA(384)
+    .OUTPUT_STREAM_WIDTH_BA(272)
   ) inst (
     .ap_clk(ap_clk),
     .ap_rst_n(ap_rst_n),

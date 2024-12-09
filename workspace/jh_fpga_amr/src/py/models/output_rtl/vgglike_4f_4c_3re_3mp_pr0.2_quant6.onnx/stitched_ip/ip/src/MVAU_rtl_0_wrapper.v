@@ -41,7 +41,7 @@ module MVAU_rtl_0 #(
 	parameter	SIMD = 6,
 	parameter	ACTIVATION_WIDTH = 6,
 	parameter	WEIGHT_WIDTH = 6,
-	parameter	ACCU_WIDTH = 16,
+	parameter	ACCU_WIDTH = 13,
         parameter       NARROW_WEIGHTS = 1,
 	parameter	SIGNED_ACTIVATIONS = 1,
 	parameter	SEGMENTLEN = 2.0,

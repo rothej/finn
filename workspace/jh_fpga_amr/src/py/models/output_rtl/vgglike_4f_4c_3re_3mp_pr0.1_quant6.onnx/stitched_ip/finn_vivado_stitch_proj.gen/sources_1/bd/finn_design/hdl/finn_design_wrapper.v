@@ -1,7 +1,7 @@
 //Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
-//Date        : Thu Dec  5 17:48:56 2024
+//Date        : Mon Dec  9 18:13:40 2024
 //Host        : finn_dev_rothej running 64-bit Ubuntu 22.04.1 LTS
 //Command     : generate_target finn_design_wrapper.bd
 //Design      : finn_design_wrapper
@@ -20,7 +20,7 @@ module finn_design_wrapper
     s_axis_0_tvalid);
   input ap_clk;
   input ap_rst_n;
-  output [255:0]m_axis_0_tdata;
+  output [95:0]m_axis_0_tdata;
   input m_axis_0_tready;
   output m_axis_0_tvalid;
   input [15:0]s_axis_0_tdata;
@@ -29,7 +29,7 @@ module finn_design_wrapper
 
   wire ap_clk;
   wire ap_rst_n;
-  wire [255:0]m_axis_0_tdata;
+  wire [95:0]m_axis_0_tdata;
   wire m_axis_0_tready;
   wire m_axis_0_tvalid;
   wire [15:0]s_axis_0_tdata;
