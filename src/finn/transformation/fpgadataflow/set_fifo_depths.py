@@ -273,6 +273,7 @@ class InsertAndSetFIFODepths(Transformation):
         swg_exception=False,
         vivado_ram_style="auto",
         fifosim_input_throttle=True,
+        cfg_n_inferences=None,
     ):
         super().__init__()
         self.fpgapart = fpgapart
@@ -282,6 +283,7 @@ class InsertAndSetFIFODepths(Transformation):
         self.swg_exception = swg_exception
         self.vivado_ram_style = vivado_ram_style
         self.fifosim_input_throttle = fifosim_input_throttle
+        self.cfg_n_inferences = cfg_n_inferences
 
     def apply(self, model):
         # these optypes may potentially use external weights
@@ -370,6 +372,10 @@ class InsertAndSetFIFODepths(Transformation):
             # convnet, two inputs are typically enough to fill entire
             # layer pipeline due to overlaps
             n_inferences = 2
+
+        # Override the number of inferences if cfg_n_inferences is set
+        if self.cfg_n_inferences is not None:
+            n_inferences = self.cfg_n_inferences
 
         # use the critical_path_cycles estimate to set the timeout limit for FIFO sim
         max_iters = latency * 1.1 + 20
