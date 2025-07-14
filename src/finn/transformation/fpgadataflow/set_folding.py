@@ -27,9 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import functools
 import numpy as np
 import warnings
-import functools
 from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.general import GiveUniqueNodeNames
@@ -50,7 +50,7 @@ def common_divisors(numbers):
     for num in numbers:
         individual_divisors = list(divisors(num))
         separate_divisors.append(individual_divisors)
-    
+
     return functools.reduce(np.intersect1d, separate_divisors)
 
 
