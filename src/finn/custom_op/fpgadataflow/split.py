@@ -154,11 +154,3 @@ class StreamingSplit(HWCustomOp):
     def get_instream_width_padded(self, ind=0):
         in_width = self.get_instream_width()
         return roundup_to_integer_multiple(in_width, 8)
-
-    def get_verilog_top_module_intf_names(self):
-        intf_names = super().get_verilog_top_module_intf_names()
-        intf_names["s_axis"] = [("in0", self.get_instream_width_padded())]
-        intf_names["m_axis"] = []
-        for i in range(self.get_n_outputs()):
-            intf_names["m_axis"].append(("out_%d" % i, self.get_instream_width_padded()))
-        return intf_names
