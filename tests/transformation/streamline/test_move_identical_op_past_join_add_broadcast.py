@@ -41,7 +41,6 @@ from finn.transformation.streamline.reorder import (
     MoveTransposePastJoinAdd,
 )
 
-
 moveop_details = {
     "Transpose_0231_nocast": {
         "op_type": "Transpose",
@@ -51,7 +50,7 @@ moveop_details = {
         "in2_shape": [1, 64, 10, 9],
         "op2_shape": [1, 10, 9, 64],
         "out_shape": [1, 10, 9, 64],
-        "perm": [0, 2, 3, 1]
+        "perm": [0, 2, 3, 1],
     },
     "Transpose_0231_bcast1": {
         "op_type": "Transpose",
@@ -61,7 +60,7 @@ moveop_details = {
         "in2_shape": [1, 64, 10, 9],
         "op2_shape": [1, 10, 9, 64],
         "out_shape": [1, 10, 9, 64],
-        "perm": [0, 2, 3, 1]
+        "perm": [0, 2, 3, 1],
     },
     "Transpose_0231_bcast2": {
         "op_type": "Transpose",
@@ -71,7 +70,7 @@ moveop_details = {
         "in2_shape": [1, 64, 1, 9],
         "op2_shape": [1, 1, 9, 64],
         "out_shape": [1, 10, 9, 64],
-        "perm": [0, 2, 3, 1]
+        "perm": [0, 2, 3, 1],
     },
     "Transpose_0312_nocast": {
         "op_type": "Transpose",
@@ -81,7 +80,7 @@ moveop_details = {
         "in2_shape": [1, 10, 9, 64],
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
-        "perm": [0, 3, 1, 2]
+        "perm": [0, 3, 1, 2],
     },
     "Transpose_0312_bcast1": {
         "op_type": "Transpose",
@@ -91,7 +90,7 @@ moveop_details = {
         "in2_shape": [1, 10, 9, 64],
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
-        "perm": [0, 3, 1, 2]
+        "perm": [0, 3, 1, 2],
     },
     "Transpose_0312_bcast2": {
         "op_type": "Transpose",
@@ -101,7 +100,7 @@ moveop_details = {
         "in2_shape": [1, 1, 9, 64],
         "op2_shape": [1, 64, 1, 9],
         "out_shape": [1, 64, 10, 9],
-        "perm": [0, 3, 1, 2]
+        "perm": [0, 3, 1, 2],
     },
     "Mul_nocast": {
         "op_type": "Mul",
@@ -112,7 +111,7 @@ moveop_details = {
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": 1.415,
-        "op2_val": 1.415
+        "op2_val": 1.415,
     },
     "Mul_bcast1": {
         "op_type": "Mul",
@@ -123,7 +122,7 @@ moveop_details = {
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": -0.476,
-        "op2_val": -0.476
+        "op2_val": -0.476,
     },
     "Mul_bcast2": {
         "op_type": "Mul",
@@ -134,7 +133,7 @@ moveop_details = {
         "op2_shape": [1, 64, 1, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": -1.374,
-        "op2_val": -1.374
+        "op2_val": -1.374,
     },
     "Add_nocast": {
         "op_type": "Add",
@@ -145,7 +144,7 @@ moveop_details = {
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": 1.415,
-        "op2_val": 0.745
+        "op2_val": 0.745,
     },
     "Add_bcast1": {
         "op_type": "Add",
@@ -156,7 +155,7 @@ moveop_details = {
         "op2_shape": [1, 64, 10, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": -0.476,
-        "op2_val": 1.539
+        "op2_val": 1.539,
     },
     "Add_bcast2": {
         "op_type": "Add",
@@ -167,9 +166,10 @@ moveop_details = {
         "op2_shape": [1, 64, 1, 9],
         "out_shape": [1, 64, 10, 9],
         "op1_val": -1.374,
-        "op2_val": -0.295
+        "op2_val": -0.295,
     },
 }
+
 
 def create_add_model(test_details):
     op1_node = oh.make_node(test_details["op_type"], inputs=["in1"], outputs=["op1_out"])
