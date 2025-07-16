@@ -1266,16 +1266,12 @@ class MoveIdenticalOpPastJoinOp(Transformation):
         for i in range(len(n.input)):
             n.input[i] = identical_ops_inputs[i]
 
-        # Output tensor of the join node must have the same shape as
-        # its input tensor (original shape is preserved)
+        # Infer shape of this tensor later
         new_join_output = model.make_new_valueinfo_name()
-        new_shape = model.get_tensor_shape(identical_ops_inputs[0])
-        new_layout = model.get_tensor_layout(identical_ops_inputs[0])
 
-        # Set new tensor shape
-        model.set_tensor_shape(new_join_output, new_shape)
-        if new_layout:
-            model.set_tensor_layout(new_join_output, new_layout)
+        # Clear the shape of new output tensor
+        # (in case it changes due to broadcasting)
+        model.set_tensor_shape(join_out, None)
 
         # Rewire join op outputs (reuse the first join input tensor)
         n.output[0] = new_join_output
@@ -1324,6 +1320,10 @@ class MoveIdenticalOpPastJoinOp(Transformation):
                 graph_modified = self.move_node(model, n, producers)
 
         if graph_modified:
+            # Run shape inference as shapes were cleared in move_node
+            model = model.transform(InferDataLayouts())
+            model = model.transform(InferShapes())
+            model = model.transform(InferDataTypes())
             model = model.transform(SortGraph(), make_deepcopy=False, cleanup=False)
 
         return (model, graph_modified)
