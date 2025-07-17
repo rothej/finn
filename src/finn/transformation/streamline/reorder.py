@@ -1269,10 +1269,6 @@ class MoveIdenticalOpPastJoinOp(Transformation):
         # Infer shape of this tensor later
         new_join_output = model.make_new_valueinfo_name()
 
-        # Clear the shape of new output tensor
-        # (in case it changes due to broadcasting)
-        model.set_tensor_shape(join_out, None)
-
         # Rewire join op outputs (reuse the first join input tensor)
         n.output[0] = new_join_output
         producers[0].input[0] = new_join_output
