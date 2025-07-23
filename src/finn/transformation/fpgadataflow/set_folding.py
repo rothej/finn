@@ -118,14 +118,13 @@ class SetFolding(Transformation):
             "Thresholding_rtl",
         ]
         # these ops use SIMD parallelism, up to a max value of NumChannels
-        # ConvolutionInputGenerator* has a special case when depthwise=1
+        # ConvolutionInputGenerator has a special case when depthwise=1
         # ConvolutionInputGenerator_rtl supports additional parallelism by
         # setting parallel_window=1 mode after maxing out SIMD
         simd_ops = [
             "FMPadding_hls",
             "FMPadding_rtl",
             "FMPadding_Pixel_hls",
-            "ConvolutionInputGenerator_hls",
             "ConvolutionInputGenerator_rtl",
             "StreamingSplit_hls",
             "StreamingConcat_hls",
