@@ -46,14 +46,6 @@ finn.custom\_op.fpgadataflow.duplicatestreams\_hls
    :undoc-members:
    :show-inheritance:
 
-finn.custom\_op.fpgadataflow.fmpadding\_hls
------------------------------------------------
-
-.. automodule:: finn.custom_op.fpgadataflow.hls.fmpadding_hls
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 finn.custom\_op.fpgadataflow.fmpadding\_pixel\_hls
 ---------------------------------------------------
 
