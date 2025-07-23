@@ -289,7 +289,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         # Allways add the output stream to the declarations
         self.code_gen_dict["$STREAMDECLARATIONS$"] = [
             # Note: Assumes stream type aliases to be set in defines
-            f"OutStream out_V;"
+            "OutStream out_V;"
         ]
         # If the left-hand-side is provided as runtime input, read code needs
         # to be generated
@@ -297,7 +297,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             # Generate a stream declaration
             self.code_gen_dict["$STREAMDECLARATIONS$"] += [
                 # Note: Assumes stream type aliases to be set in defines
-                f"LhsStream lhs_V;"
+                "LhsStream lhs_V;"
             ]
         # If the right-hand-side is provided as runtime input, read code needs
         # to be generated
@@ -305,7 +305,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             # Generate a stream declaration
             self.code_gen_dict["$STREAMDECLARATIONS$"] += [
                 # Note: Assumes stream type aliases to be set in defines
-                f"RhsStream rhs_V;"
+                "RhsStream rhs_V;"
             ]
 
     # Generates C++ code for calling the computation part of the operator
@@ -485,7 +485,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             }}
             """,
             # Write the PE group into the output stream
-            f"""
+            """
             out_V.write(flatten(out));
             """,
             # Close all for-loop bodies of the generated nest
@@ -541,9 +541,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         self.code_gen_dict["$BLACKBOXFUNCTION$"] = [
             # Note: Assumes stream type aliases to be set in defines
             f"void {self.onnx_node.name} (",
-            f"  LhsStream &lhs_V," if runtime_lhs else "",
-            f"  RhsStream &rhs_V," if runtime_rhs else "",
-            f"  OutStream &out_V",
+            "  LhsStream &lhs_V," if runtime_lhs else "",
+            "  RhsStream &rhs_V," if runtime_rhs else "",
+            "  OutStream &out_V",
             ")",
         ]
 
@@ -560,7 +560,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         # the top-level function arguments
         self.code_gen_dict["$PRAGMAS$"] += [
             # Connect the output stream with an axi stream interface
-            f"#pragma HLS INTERFACE axis port=out_V",
+            "#pragma HLS INTERFACE axis port=out_V",
         ]
 
         # If the left-hand-side is provided as runtime input interface pragmas
@@ -568,7 +568,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         if self.lhs_style == "input":
             # Connect the lhs input stream with an axi stream interface
             self.code_gen_dict["$PRAGMAS$"] += [
-                f"#pragma HLS INTERFACE axis port=lhs_V",
+                "#pragma HLS INTERFACE axis port=lhs_V",
             ]
 
         # If the right-hand-side is provided as runtime input interface pragmas
@@ -576,7 +576,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         if self.rhs_style == "input":
             # Connect the rhs input stream with an axi stream interface
             self.code_gen_dict["$PRAGMAS$"] += [
-                f"#pragma HLS INTERFACE axis port=rhs_V",
+                "#pragma HLS INTERFACE axis port=rhs_V",
             ]
 
         # No block-level I/O protocol for the function return value
@@ -595,17 +595,17 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         # need to be inserted
         if self.lhs_style == "input":
             intf_names["s_axis"] += [(
-                f"lhs_V", self.get_instream_width_padded(ind=0)
+                "lhs_V", self.get_instream_width_padded(ind=0)
             )]
         # If the right-hand-side is provided as runtime input interface names
         # need to be inserted
         if self.rhs_style == "input":
             intf_names["s_axis"] += [(
-                f"rhs_V", self.get_instream_width_padded(ind=1)
+                "rhs_V", self.get_instream_width_padded(ind=1)
             )]
         # AXI stream output interfaces
         intf_names["m_axis"] = [
-            (f"out_V", self.get_outstream_width_padded(ind=0))
+            ("out_V", self.get_outstream_width_padded(ind=0))
         ]
         # No AXI-MM, AXI-Lite or protocol-less interfaces
         intf_names["aximm"] = []

@@ -29,7 +29,6 @@
 import pytest
 
 import numpy as np
-import onnx  # noqa
 import os
 import torch
 from brevitas.core.scaling import ScalingImplType
@@ -42,6 +41,8 @@ from qonnx.util.cleanup import cleanup as qonnx_cleanup
 import finn.core.onnx_exec as oxe
 from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
 from finn.util.basic import make_build_dir
+
+import onnx  # noqa
 
 
 @pytest.mark.brevitas_export

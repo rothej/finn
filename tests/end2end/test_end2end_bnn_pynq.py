@@ -31,10 +31,6 @@ import pytest
 
 import itertools
 import numpy as np
-
-# as of Feb'20 there is a bug that segfaults ONNX shape inference if we
-# import pytorch before onnx, so we make sure to import onnx first
-import onnx  # NOQA
 import os
 import torch
 import warnings
@@ -104,6 +100,11 @@ from finn.util.test import (
     get_trained_network_and_ishape,
     load_test_checkpoint_or_skip,
 )
+
+# as of Feb'20 there is a bug that segfaults ONNX shape inference if we
+# import pytorch before onnx, so we make sure to import onnx first
+import onnx  # NOQA
+
 
 build_dir = os.environ["FINN_BUILD_DIR"]
 target_clk_ns = 20
@@ -188,8 +189,9 @@ def fold_cnv_large(model):
     swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator_rtl")
     for i in range(len(swg_layers)):
         swg_inst = getCustomOp(swg_layers[i])
-        simd = folding[i][1]
-        swg_inst.set_nodeattr("SIMD", simd)
+        if not swg_inst.get_nodeattr("depthwise"):
+            simd = folding[i][1]
+            swg_inst.set_nodeattr("SIMD", simd)
         swg_inst.set_nodeattr("ram_style", "distributed")
     return model
 
@@ -219,8 +221,9 @@ def fold_cnv_small(model):
     swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator_rtl")
     for i in range(len(swg_layers)):
         swg_inst = getCustomOp(swg_layers[i])
-        simd = folding[i][1]
-        swg_inst.set_nodeattr("SIMD", simd)
+        if not swg_inst.get_nodeattr("depthwise"):
+            simd = folding[i][1]
+            swg_inst.set_nodeattr("SIMD", simd)
         swg_inst.set_nodeattr("ram_style", "distributed")
     inp_qnt_node = model.get_nodes_by_op_type("Thresholding_rtl")[0]
     inp_qnt = getCustomOp(inp_qnt_node)
@@ -356,7 +359,7 @@ def deploy_based_on_board(model, model_title, topology, wbits, abits, board):
 
     # driver.py and python libraries
     pynq_driver_dir = model.get_metadata_prop("pynq_driver_dir")
-    if not None:
+    if pynq_driver_dir is not None:
         copytree(pynq_driver_dir, deployment_dir, dirs_exist_ok=True)
         model.set_metadata_prop("pynq_deploy_dir", deployment_dir)
     else:
@@ -570,8 +573,8 @@ class TestEnd2End:
         model = model.transform(to_hw.InferThresholdingLayer())
         # needed for convolutions
         if "fc" not in topology:
+            model = model.transform(to_hw.InferPool())
             model = model.transform(to_hw.InferConvInpGen())
-            model = model.transform(to_hw.InferStreamingMaxPool())
             model = model.transform(RemoveCNVtoFCFlatten())
         # get rid of Tranpose -> Tranpose identity seq
         model = model.transform(absorb.AbsorbConsecutiveTransposes())
@@ -600,9 +603,9 @@ class TestEnd2End:
             "cnv": [
                 ("Transpose", 1),
                 ("Thresholding", 1),
-                ("ConvolutionInputGenerator", 6),
+                ("ConvolutionInputGenerator", 8),
                 ("MVAU", 9),
-                ("StreamingMaxPool", 2),
+                ("Pool", 2),
                 ("LabelSelect", 1),
             ],
         }
@@ -643,9 +646,9 @@ class TestEnd2End:
             "cnv": [
                 ("Transpose", 1),
                 ("Thresholding_rtl", 1),
-                ("ConvolutionInputGenerator_rtl", 6),
+                ("ConvolutionInputGenerator_rtl", 8),
                 ("MVAU_hls", 9),
-                ("StreamingMaxPool_hls", 2),
+                ("Pool_hls", 2),
                 ("LabelSelect_hls", 1),
             ],
         }

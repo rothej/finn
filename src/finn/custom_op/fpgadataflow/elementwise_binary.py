@@ -285,9 +285,8 @@ class ElementwiseBinaryOperation(HWCustomOp):
 
         # Setup PyVerilator simulation of the node
         sim = self.get_rtlsim()  # noqa: Duplicate code prepare simulation
-        # Reset the RTL simulation
+        # Reset the RTL simulation; finnxsi toggles the clock
         super().reset_rtlsim(sim)
-        super().toggle_clk(sim)
         # Run the RTL Simulation
         self.rtlsim_multi_io(sim, io_dict)
 
