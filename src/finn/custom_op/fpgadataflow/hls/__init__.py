@@ -33,7 +33,6 @@ from finn.custom_op.fpgadataflow.hls.concat_hls import StreamingConcat_hls
 from finn.custom_op.fpgadataflow.hls.convolutioninputgenerator_hls import (
     ConvolutionInputGenerator_hls,
 )
-from finn.custom_op.fpgadataflow.hls.downsampler_hls import DownSampler_hls
 from finn.custom_op.fpgadataflow.hls.duplicatestreams_hls import DuplicateStreams_hls
 from finn.custom_op.fpgadataflow.hls.fmpadding_hls import FMPadding_hls
 from finn.custom_op.fpgadataflow.hls.fmpadding_pixel_hls import FMPadding_Pixel_hls
@@ -61,7 +60,6 @@ custom_op["AddStreams_hls"] = AddStreams_hls
 custom_op["ChannelwiseOp_hls"] = ChannelwiseOp_hls
 custom_op["CheckSum_hls"] = CheckSum_hls
 custom_op["ConvolutionInputGenerator_hls"] = ConvolutionInputGenerator_hls
-custom_op["DownSampler_hls"] = DownSampler_hls
 custom_op["DuplicateStreams_hls"] = DuplicateStreams_hls
 custom_op["FMPadding_hls"] = FMPadding_hls
 custom_op["FMPadding_Pixel_hls"] = FMPadding_Pixel_hls

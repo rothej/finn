@@ -46,14 +46,6 @@ finn.custom\_op.fpgadataflow.convolutioninputgenerator_hls
    :undoc-members:
    :show-inheritance:
 
-finn.custom\_op.fpgadataflow.downsampler_hls
----------------------------------------------
-
-.. automodule:: finn.custom_op.fpgadataflow.hls.downsampler_hls
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 finn.custom\_op.fpgadataflow.duplicatestreams\_hls
 -------------------------------------------------------
 

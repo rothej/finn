@@ -122,7 +122,6 @@ class SetFolding(Transformation):
         # ConvolutionInputGenerator_rtl supports additional parallelism by
         # setting parallel_window=1 mode after maxing out SIMD
         simd_ops = [
-            "DownSampler_hls",
             "FMPadding_hls",
             "FMPadding_rtl",
             "FMPadding_Pixel_hls",

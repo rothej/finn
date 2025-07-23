@@ -170,14 +170,14 @@ def test_convert_to_hw_conv_layer(conv_config, depthwise, use_rtl_swg, exec_mode
     assert oxe.compare_execution(model, new_model, inp_dict)
 
     if not use_rtl_swg and kernel_size == 1 and stride > 1 and pad == 0:
-        assert new_model.graph.node[1].op_type == "DownSampler_hls"
+        assert new_model.graph.node[1].op_type == "ConvolutionInputGenerator_hls"
         if exec_mode == "rtlsim":
-            node = new_model.get_nodes_by_op_type("DownSampler_hls")[0]
+            node = new_model.get_nodes_by_op_type("ConvolutionInputGenerator_hls")[0]
             inst = getCustomOp(node)
             cycles_rtlsim = inst.get_nodeattr("cycles_rtlsim")
             exp_cycles_dict = new_model.analysis(exp_cycles_per_layer)
             exp_cycles = exp_cycles_dict[node.name]
-            assert np.isclose(exp_cycles, cycles_rtlsim, atol=11)
+            assert np.isclose(exp_cycles, cycles_rtlsim, atol=12)
             assert exp_cycles != 0
 
     if pad:
