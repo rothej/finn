@@ -219,9 +219,26 @@ if [ ! -z "$IMAGENET_VAL_PATH" ];then
   DOCKER_EXEC+="-e IMAGENET_VAL_PATH=$IMAGENET_VAL_PATH "
 fi
 if [ ! -z "$FINN_XILINX_PATH" ];then
-  VIVADO_PATH="$FINN_XILINX_PATH/Vivado/$FINN_XILINX_VERSION"
-  VITIS_PATH="$FINN_XILINX_PATH/Vitis/$FINN_XILINX_VERSION"
-  HLS_PATH="$FINN_XILINX_PATH/Vitis_HLS/$FINN_XILINX_VERSION"
+  if [[ "$FINN_XILINX_VERSION" =~ ^20([0-9]{2})\.(1|2)$ ]]; then
+    year="${BASH_REMATCH[1]}"
+    minor="${BASH_REMATCH[2]}"
+
+    # Convert to integers for comparison
+    year=$((10#$year))
+    minor=$((10#$minor))
+
+    if (( year > 24 )) || { (( year == 24 )) && (( minor > 2 )); }; then
+      VIVADO_PATH="$FINN_XILINX_PATH/$FINN_XILINX_VERSION/Vivado"
+      VITIS_PATH="$FINN_XILINX_PATH/$FINN_XILINX_VERSION/Vitis"
+      HLS_PATH="$FINN_XILINX_PATH/$FINN_XILINX_VERSION/Vitis"
+    else
+      VIVADO_PATH="$FINN_XILINX_PATH/Vivado/$FINN_XILINX_VERSION"
+      VITIS_PATH="$FINN_XILINX_PATH/Vitis/$FINN_XILINX_VERSION"
+      HLS_PATH="$FINN_XILINX_PATH/Vitis_HLS/$FINN_XILINX_VERSION"
+    fi
+  else
+    echo "FINN_XILINX_VERSION ($FINN_XILINX_VERSION) is not in the correct format (YYYY.1 or YYYY.2)"
+  fi
   DOCKER_EXEC+="-v $FINN_XILINX_PATH:$FINN_XILINX_PATH "
   if [ -d "$VIVADO_PATH" ];then
     DOCKER_EXEC+="-e "XILINX_VIVADO=$VIVADO_PATH" "
@@ -275,11 +292,12 @@ if [ -z "$FINN_SINGULARITY" ];then
 else
   SINGULARITY_BASE="singularity exec"
   # Replace command options for Singularity
-  SINGULARITY_EXEC="${DOCKER_EXEC//"-e "/"--env "}"
-  SINGULARITY_EXEC="${SINGULARITY_EXEC//"-v "/"-B "}"
-  SINGULARITY_EXEC="${SINGULARITY_EXEC//"-w "/"--pwd "}"
+  SINGULARITY_EXEC="${DOCKER_EXEC//-e /--env }"
+  SINGULARITY_EXEC="${SINGULARITY_EXEC//-v /-B }"
+  SINGULARITY_EXEC="${SINGULARITY_EXEC//-w /--pwd }"
   CMD_TO_RUN="$SINGULARITY_BASE $SINGULARITY_EXEC $FINN_SINGULARITY /usr/local/bin/finn_entrypoint.sh $DOCKER_CMD"
   gecho "FINN_SINGULARITY is set, launching Singularity container instead of Docker"
 fi
 
+echo $CMD_TO_RUN
 $CMD_TO_RUN
