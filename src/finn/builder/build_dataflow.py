@@ -30,6 +30,7 @@ import clize
 import json
 import logging
 import os
+import pdb  # NOQA
 import sys
 import time
 import traceback
@@ -40,8 +41,6 @@ from finn.builder.build_dataflow_config import (
     default_build_dataflow_steps,
 )
 from finn.builder.build_dataflow_steps import build_dataflow_step_lookup
-
-import pdb  # NOQA
 
 
 # adapted from https://stackoverflow.com/a/39215961

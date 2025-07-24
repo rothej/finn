@@ -31,6 +31,10 @@ import pytest
 
 import itertools
 import numpy as np
+
+# as of Feb'20 there is a bug that segfaults ONNX shape inference if we
+# import pytorch before onnx, so we make sure to import onnx first
+import onnx  # NOQA
 import os
 import torch
 import warnings
@@ -100,11 +104,6 @@ from finn.util.test import (
     get_trained_network_and_ishape,
     load_test_checkpoint_or_skip,
 )
-
-# as of Feb'20 there is a bug that segfaults ONNX shape inference if we
-# import pytorch before onnx, so we make sure to import onnx first
-import onnx  # NOQA
-
 
 build_dir = os.environ["FINN_BUILD_DIR"]
 target_clk_ns = 20
