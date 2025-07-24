@@ -132,12 +132,7 @@ class MoveScalarMulPastMatMul(Transformation):
                 consumer = model.find_consumer(n.output[0])
                 if consumer is not None and consumer.op_type == "MatMul":
                     mul_weight_name = n.input[1]
-                    matmul_weight_name = consumer.input[1]
                     A = model.get_initializer(mul_weight_name)
-                    W = model.get_initializer(matmul_weight_name)
-                    if (A is None) or (W is None):
-                        warnings.warn("MatMul or Mul params are not constant, skipping")
-                        continue
                     start_name = n.input[0]
                     middle_name = n.output[0]
                     end_name = consumer.output[0]
