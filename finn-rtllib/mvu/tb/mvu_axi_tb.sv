@@ -146,7 +146,7 @@ module mvu_axi_tb;
 						ivld <= 1;
 						@(posedge clk iff irdy);
 						idat <= 'x;
-						ivld <= 0; 
+						ivld <= 0;
 					end : blkActFeed
 
 					// Scan through Weight Matrix

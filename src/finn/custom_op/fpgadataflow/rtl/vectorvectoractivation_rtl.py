@@ -263,7 +263,7 @@ class VVAU_rtl(VVAU, RTLBackend):
             is_versal_family
         ), "DSP-based (RTL) VVU currently only supported on Versal (DSP58) devices"
 
-        return  3
+        return 3
 
     def prepare_codegen_default(self, fpgapart, clk):
         template_path = os.environ["FINN_ROOT"] + "/finn-rtllib/mvu/mvu_vvu_axi_wrapper.v"

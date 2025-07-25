@@ -253,9 +253,12 @@ class MVAU_rtl(MVAU, RTLBackend):
         )
 
         match dsp_block:
-            case "DSP58":    return  3
-            case "DSP48E2":  return  2
-            case _:          return  1
+            case "DSP58":
+                return 3
+            case "DSP48E2":
+                return 2
+            case _:
+                return 1
 
     def generate_hdl(self, model, fpgapart, clk):
         # Generate params as part of IP preparation
