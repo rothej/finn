@@ -767,7 +767,7 @@ module mvu #(
 
 					uwire signed [1:0]  arg[SIMD];
 					uwire signed [SUM_WIDTH-1:0]  sum;
-					add_multi #(.N(SIMD), .ARG_WIDTH(2), .ARG_LO(-1), .ARG_HI(1)) reduce (
+					add_multi #(.N(SIMD), .DEPTH(SIMD == 1? 0: $clog2(SIMD+1)-2), .ARG_WIDTH(2), .ARG_LO(-1), .ARG_HI(1)) reduce (
 						.clk, .rst, .en,
 						.arg, .sum
 					);
@@ -792,36 +792,22 @@ module mvu #(
 			// Conclusive low part accumulation (all unsigned arithmetic)
 			if(i < PE_REM)  assign  lo4[i] = '0;
 			else begin : genLo
+
+				// Instantiate Adder Tree
 				localparam int unsigned  LO_WIDTH = lo_width(i);
 				localparam int unsigned  SUM_WIDTH = sumwidth(SIMD, LO_WIDTH);
+				uwire [LO_WIDTH -1:0]  arg[SIMD];
+				uwire [SUM_WIDTH-1:0]  sum;
+				add_multi #(
+					.N(SIMD), .DEPTH(SIMD == 1? 1 : $clog2(SIMD+1)-1),
+					.ARG_WIDTH(LO_WIDTH),
+					.RESET_ZERO(0)
+				) reduce (
+					.clk, .rst, .en,
+					.arg, .sum(lo4[i])
+				);
+				for(genvar  s = 0; s < SIMD; s++)  assign  arg[s] = p3[s][OFFSETS[i]+:LO_WIDTH];
 
-				logic [SUM_WIDTH-1:0]  Sum = 'x;
-				if(SIMD == 1) begin : genReg
-					// Just slide in a balancing register
-					always_ff @(posedge clk) begin
-						if(rst)      Sum <= 'x;
-						else if(en)  Sum <= p3[0][OFFSETS[i]+:LO_WIDTH];
-					end
-				end : genReg
-				else begin : genTree
-
-					// Instantiate Adder Tree
-					uwire [LO_WIDTH -1:0]  arg[SIMD];
-					uwire [SUM_WIDTH-1:0]  sum;
-					add_multi #(.N(SIMD), .ARG_WIDTH(LO_WIDTH)) reduce (
-						.clk, .rst, .en,
-						.arg, .sum
-					);
-					for(genvar  s = 0; s < SIMD; s++)  assign  arg[s] = p3[s][OFFSETS[i]+:LO_WIDTH];
-
-					always_ff @(posedge clk) begin
-						if(rst)      Sum <= 'x;
-						else if(en)  Sum <= sum;
-					end
-
-				end : genTree
-
-				assign  lo4[i] = Sum;
 			end : genLo
 
 		end : genLanes

@@ -38,19 +38,20 @@ module add_multi_tb;
 
 	typedef struct {
 		int unsigned  n;
+		int unsigned  d;
 		int  arg_lo;
 		int  arg_hi;
 	} test_cfg_t;
 
-	localparam int unsigned  ROUNDS = 137;
+	localparam int unsigned  ROUNDS = 509;
 	localparam int unsigned  TESTS = 6;
 	localparam test_cfg_t  TEST_CFG[TESTS] = '{
-		'{  7, -1,  1},
-		'{ 16, -1,  1},
-		'{ 33, -1,  1},
-		'{  5,  0,  7},
-		'{  8,  0, 16},
-		'{ 31,  0, 33}
+		'{  7, 4, -1,  1},
+		'{ 16, 2, -1,  1},
+		'{ 33, 7, -1,  1},
+		'{  5, 0,  0,  7},
+		'{  8, 4,  0, 16},
+		'{ 31, 5,  0, 33}
 	};
 
 	logic  clk = 0;
@@ -69,6 +70,7 @@ module add_multi_tb;
 	for(genvar  test = 0; test < TESTS; test++) begin : genTests
 		localparam test_cfg_t  CFG = TEST_CFG[test];
 		localparam int unsigned  N = CFG.n;
+		localparam int unsigned  D = CFG.d;
 		localparam int  ARG_LO = CFG.arg_lo;
 		localparam int  ARG_HI = CFG.arg_hi;
 
@@ -78,15 +80,20 @@ module add_multi_tb;
 		// DUT
 		logic [ARG_WIDTH-1:0]  arg[N];
 		uwire [SUM_WIDTH-1:0]  sum;
-		add_multi #(.N(N), .ARG_WIDTH(ARG_WIDTH), .ARG_LO(ARG_LO), .ARG_HI(ARG_HI)) dut (
+		add_multi #(.N(N), .DEPTH(D), .ARG_WIDTH(ARG_WIDTH), .ARG_LO(ARG_LO), .ARG_HI(ARG_HI)) dut (
 			.clk, .rst, .en('1),
 			.arg, .sum
 		);
 
 		// Stimulus
-		int  Q[$];
+		typedef struct {
+			bit  vld;
+			int  sum;
+		} ref_t;
+		ref_t  feed;
 		initial begin
-			arg = '{ default: 'x };
+			arg  = '{ default: 'x };
+			feed = '{ vld: 0, sum: 0 };
 			@(posedge clk iff !rst);
 
 			repeat(ROUNDS) begin
@@ -98,10 +105,11 @@ module add_multi_tb;
 					sum0 += val;
 				end
 				arg <= arg0;
-				Q.push_back(sum0);
+				feed <= '{ vld: 1, sum: sum0 };
 				@(posedge clk);
 			end
 			arg <= '{ default: 0 };
+			feed <= '{ vld: 0, sum: 0 };
 
 			repeat(7) @(posedge clk);
 			done[test] <= 1;
@@ -110,22 +118,16 @@ module add_multi_tb;
 		// Checker
 		int unsigned  Cnt = 0;
 		initial begin
+			automatic ref_t  Q[D+1];
 			@(posedge clk iff !rst);
-			@(posedge clk iff ^sum === 1'bx);
-			while(Q.size() > 0) @(posedge clk) begin
-				automatic int  exp = Q.pop_front();
-				assert(sum === exp[SUM_WIDTH-1:0]) else begin
-					$error("Test %0d: Received %0d instead of %0d.", test, sum, exp);
+			forever @(posedge clk) begin
+				for(int unsigned  i = 0; i < D; i++)  Q[i] = Q[i+1];
+				Q[D] = feed;
+				assert(!Q[0].vld || (sum == Q[0].sum[SUM_WIDTH-1:0])) else begin
+					$error("Test %0d: Received %0d instead of %0d.", test, sum, Q[0].sum);
 					$stop;
 				end
 				Cnt++;
-			end
-
-			forever @(posedge clk) begin
-				assert(sum == 0) else begin
-					$error("Test %0d: Unexpected trailing output.", test);
-					$stop;
-				end
 			end
 		end
 
