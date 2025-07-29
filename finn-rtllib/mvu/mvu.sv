@@ -767,7 +767,7 @@ module mvu #(
 
 					uwire signed [1:0]  arg[SIMD];
 					uwire signed [SUM_WIDTH-1:0]  sum;
-					add_multi #(.N(SIMD), .DEPTH(SIMD == 1? 0: $clog2(SIMD+1)-2), .ARG_WIDTH(2), .ARG_LO(-1), .ARG_HI(1)) reduce (
+					add_multi #(.N(SIMD), .DEPTH(PIPELINE_DEPTH-5), .ARG_WIDTH(2), .ARG_LO(-1), .ARG_HI(1)) reduce (
 						.clk, .rst, .en,
 						.arg, .sum
 					);
@@ -799,7 +799,7 @@ module mvu #(
 				uwire [LO_WIDTH -1:0]  arg[SIMD];
 				uwire [SUM_WIDTH-1:0]  sum;
 				add_multi #(
-					.N(SIMD), .DEPTH(SIMD == 1? 1 : $clog2(SIMD+1)-1),
+					.N(SIMD), .DEPTH(PIPELINE_DEPTH-4),
 					.ARG_WIDTH(LO_WIDTH),
 					.RESET_ZERO(0)
 				) reduce (
