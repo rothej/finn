@@ -211,15 +211,6 @@ module mvu #(
 	localparam int unsigned  LO_WIDTH_MAX = lo_width(NUM_LANES-1);
 	localparam int unsigned  HI_WIDTH_MAX = hi_width(NUM_LANES < 2? 0 : NUM_LANES-2);
 
-	// Compute the count of decendents for all nodes in the reduction trees.
-	typedef int unsigned  leaf_load_t[2*SIMD-1];
-	function leaf_load_t init_leaf_loads();
-		automatic leaf_load_t  res;
-		for(int  i = 2*(SIMD-1); i >= int'(SIMD)-1; i--)  res[i] = 1;
-		for(int  i = SIMD-2; i >= 0; i--)  res[i] = res[2*i+1] + res[2*i+2];
-		return  res;
-	endfunction : init_leaf_loads
-
 	// Pipeline for last indicator flag
 	// Depth: 3 cycles for DSP + external SIMD reduction
 	localparam int unsigned  PIPELINE_DEPTH = 3 + $clog2(SIMD+1) + (SIMD == 1);
@@ -762,9 +753,6 @@ module mvu #(
 		// - balanced tree construction with all fully occupied levels pipelined
 
 		// Count leaves reachable from each node
-		localparam leaf_load_t   LEAF_LOAD = init_leaf_loads();
-		localparam int unsigned  HI_NODE_REGISTERED = 2**($clog2(SIMD+1)-1)-2;
-
 		uwire signed [HI_WIDTH_MAX                 -1:0]  hi4[NUM_LANES];
 		uwire        [sum_width(SIMD, LO_WIDTH_MAX)-1:0]  lo4[NUM_LANES];
 		for(genvar  i = 0; i < NUM_LANES; i++) begin : genLanes
