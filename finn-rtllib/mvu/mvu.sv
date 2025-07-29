@@ -213,7 +213,7 @@ module mvu #(
 
 	// Pipeline for last indicator flag
 	// Depth: 3 cycles for DSP + external SIMD reduction
-	localparam int unsigned  PIPELINE_DEPTH = 3 + $clog2(SIMD+1) + (SIMD == 1);
+	localparam int unsigned  PIPELINE_DEPTH = 3 + $clog2(SIMD) + (SIMD == 1) + 1;
 /* verilator lint_off LITENDIAN */
 	logic [1:PIPELINE_DEPTH] L = '0;
 /* verilator lint_on LITENDIAN */

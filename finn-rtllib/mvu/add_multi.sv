@@ -50,7 +50,7 @@ module add_multi import mvu_pkg::*; #(
 	output	logic [SUM_WIDTH-1:0]  sum
 );
 
-	localparam int unsigned  L = $clog2(N);  // Number of inner tree levels
+	localparam int unsigned  L = $clog2(N);  // Number of levels with reductions
 
 	uwire [SUM_WIDTH-1:0]  sum0;
 	if(L < 1) begin : genTrivial
