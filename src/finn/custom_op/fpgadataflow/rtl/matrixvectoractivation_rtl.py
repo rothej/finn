@@ -329,7 +329,7 @@ class MVAU_rtl(MVAU, RTLBackend):
         dsp_block = get_dsp_block(fpgapart)
         code_gen_dict = {}
         code_gen_dict["$IS_MVU$"] = [str(1)]
-        code_gen_dict["$VERSION$"] = [self._resolve_dsp_version(dsp_block)]
+        code_gen_dict["$VERSION$"] = [str(self._resolve_dsp_version(dsp_block))]
         code_gen_dict["$PUMPED_COMPUTE$"] = [str(pumped_compute)]
         code_gen_dict["$MW$"] = [str(self.get_nodeattr("MW"))]
         code_gen_dict["$MH$"] = [str(self.get_nodeattr("MH"))]
