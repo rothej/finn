@@ -120,56 +120,26 @@ class InferConvInpGen(Transformation):
                     )
                     graph.node.insert(node_ind, padding_node)
 
-                is_kernel_pointwise = k_h == 1 and k_w == 1
-                is_square_image = ConvInpGen_idim_h == ConvInpGen_idim_w
-                is_equal_stride = stride_h == stride_w
-
                 is_1D = (ifm_dim_h == 1) or (ifm_dim_w == 1)
-                if (stride_h > 1 or stride_w > 1) and is_kernel_pointwise:
-                    downsample_1D = is_1D
-                    is1D_unitx = ifm_dim_w == 1
-                    downsample_2D = (not downsample_1D) and is_square_image and is_equal_stride
-                    if not (downsample_1D or downsample_2D):
-                        warnings.warn(f"Couldn't infer Downsample from {n.name},check config.")
-                        continue
-                    ConvInpGen_idim = max(ConvInpGen_idim_h, ConvInpGen_idim_w)
-                    stride = max(stride_h, stride_w)
-                    # create DownSampler node
-                    ConvInpGen_node = helper.make_node(
-                        "DownSampler",
-                        [ConvInpGen_input],
-                        [i2c_output],
-                        domain="finn.custom_op.fpgadataflow",
-                        backend="fpgadataflow",
-                        ImgDim=ConvInpGen_idim,
-                        NumChannels=ifm_ch,
-                        SIMD=ifm_ch,
-                        Stride=stride,
-                        inputDataType=dt.name,
-                        name="DownSampler_" + n.name,
-                        is1D=downsample_1D,
-                        is1D_unitx=is1D_unitx,
-                    )
-                else:
-                    ConvInpGen_node = helper.make_node(
-                        "ConvolutionInputGenerator",
-                        [ConvInpGen_input],
-                        [i2c_output],
-                        domain="finn.custom_op.fpgadataflow",
-                        backend="fpgadataflow",
-                        ConvKernelDim=[k_h, k_w],
-                        IFMChannels=ifm_ch,
-                        IFMDim=[ConvInpGen_idim_h, ConvInpGen_idim_w],
-                        OFMDim=[ofm_dim_h, ofm_dim_w],
-                        SIMD=ifm_ch,
-                        Stride=[stride_h, stride_w],
-                        Dilation=[dilation_h, dilation_w],
-                        inputDataType=dt.name,
-                        outputDataType=dt.name,
-                        depthwise=depthwise,
-                        is1D=is_1D,
-                        name="ConvolutionInputGenerator_" + n.name,
-                    )
+                ConvInpGen_node = helper.make_node(
+                    "ConvolutionInputGenerator",
+                    [ConvInpGen_input],
+                    [i2c_output],
+                    domain="finn.custom_op.fpgadataflow",
+                    backend="fpgadataflow",
+                    ConvKernelDim=[k_h, k_w],
+                    IFMChannels=ifm_ch,
+                    IFMDim=[ConvInpGen_idim_h, ConvInpGen_idim_w],
+                    OFMDim=[ofm_dim_h, ofm_dim_w],
+                    SIMD=ifm_ch,
+                    Stride=[stride_h, stride_w],
+                    Dilation=[dilation_h, dilation_w],
+                    inputDataType=dt.name,
+                    outputDataType=dt.name,
+                    depthwise=depthwise,
+                    is1D=is_1D,
+                    name="ConvolutionInputGenerator_" + n.name,
+                )
                 graph.node.insert(ConvInpGen_node_idx, ConvInpGen_node)
                 # remove old nodes
                 graph.node.remove(n)
