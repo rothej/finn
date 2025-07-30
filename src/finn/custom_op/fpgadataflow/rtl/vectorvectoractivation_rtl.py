@@ -275,7 +275,7 @@ class VVAU_rtl(VVAU, RTLBackend):
 
         code_gen_dict = {}
         code_gen_dict["$IS_MVU$"] = [str(0)]
-        code_gen_dict["$VERSION$"] = [self._resolve_dsp_version(fpgapart)]
+        code_gen_dict["$VERSION$"] = [str(self._resolve_dsp_version(fpgapart))]
         code_gen_dict["$PUMPED_COMPUTE$"] = [str(0)]
         mw = int(np.prod(self.get_nodeattr("Kernel")))
         code_gen_dict["$MW$"] = [str(mw)]
