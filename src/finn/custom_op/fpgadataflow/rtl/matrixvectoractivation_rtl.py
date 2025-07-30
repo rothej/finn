@@ -166,9 +166,8 @@ class MVAU_rtl(MVAU, RTLBackend):
             os.path.join(code_gen_dir, self.get_nodeattr("gen_top_module") + "_wrapper.v"),
             rtllib_dir + "mvu_vvu_axi.sv",
             rtllib_dir + "replay_buffer.sv",
-            rtllib_dir + "mvu_4sx4u.sv",
+            rtllib_dir + "mvu.sv",
             rtllib_dir + "mvu_vvu_8sx9_dsp58.sv",
-            rtllib_dir + "mvu_8sx8u_dsp48.sv",
         ]
         for f in sourcefiles:
             cmd.append("add_files -norecurse %s" % (f))
@@ -243,7 +242,7 @@ class MVAU_rtl(MVAU, RTLBackend):
         dsp_chain_len = critical_path_dsps if critical_path_dsps < max_chain_len else max_chain_len
         return dsp_chain_len
 
-    def _resolve_impl_style(self, dsp_block):
+    def _resolve_dsp_version(self, dsp_block):
         # Based on target device and activation/weight-width, choose the
         # supported RTL compute core
         assert (
@@ -253,22 +252,13 @@ class MVAU_rtl(MVAU, RTLBackend):
             self.onnx_node.name
         )
 
-        act_width = self.get_input_datatype(0).bitwidth()
-        weight_width = self.get_input_datatype(1).bitwidth()
-
-        if dsp_block == "DSP58":
-            if act_width <= 4 and weight_width <= 4:
-                return "mvu_4sx4u_dsp48e2"
-            else:
-                return "mvu_vvu_8sx9_dsp58"
-        else:
-            if act_width <= 4 and weight_width <= 4:
-                if dsp_block == "DSP48E1":
-                    return "mvu_4sx4u_dsp48e1"
-                elif dsp_block == "DSP48E2":
-                    return "mvu_4sx4u_dsp48e2"
-            else:
-                return "mvu_8sx8u_dsp48"
+        match dsp_block:
+            case "DSP58":
+                return 3
+            case "DSP48E2":
+                return 2
+            case _:
+                return 1
 
     def generate_hdl(self, model, fpgapart, clk):
         # Generate params as part of IP preparation
@@ -339,7 +329,7 @@ class MVAU_rtl(MVAU, RTLBackend):
         dsp_block = get_dsp_block(fpgapart)
         code_gen_dict = {}
         code_gen_dict["$IS_MVU$"] = [str(1)]
-        code_gen_dict["$COMPUTE_CORE$"] = [self._resolve_impl_style(dsp_block)]
+        code_gen_dict["$VERSION$"] = [str(self._resolve_dsp_version(dsp_block))]
         code_gen_dict["$PUMPED_COMPUTE$"] = [str(pumped_compute)]
         code_gen_dict["$MW$"] = [str(self.get_nodeattr("MW"))]
         code_gen_dict["$MH$"] = [str(self.get_nodeattr("MH"))]
@@ -366,9 +356,8 @@ class MVAU_rtl(MVAU, RTLBackend):
             code_gen_dir + self.get_nodeattr("gen_top_module") + "_wrapper_sim.v",
             rtllib_dir + "mvu_vvu_axi.sv",
             rtllib_dir + "replay_buffer.sv",
-            rtllib_dir + "mvu_4sx4u.sv",
+            rtllib_dir + "mvu.sv",
             rtllib_dir + "mvu_vvu_8sx9_dsp58.sv",
-            rtllib_dir + "mvu_8sx8u_dsp48.sv",
         ]
         return verilog_files
 
