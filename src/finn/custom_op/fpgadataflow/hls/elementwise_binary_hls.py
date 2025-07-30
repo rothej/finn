@@ -17,6 +17,11 @@ from qonnx.core.modelwrapper import ModelWrapper
 # Specializations of the generic HW operator
 import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
 
+# The generic HW custom operator version of the operator as a base class
+from finn.custom_op.fpgadataflow.elementwise_binary import (  # noqa
+    ElementwiseBinaryOperation,
+)
+
 # Utility for registering HLSBackend HWCustomOp implementations into the module
 # scope
 from finn.custom_op.fpgadataflow.hls import register_custom_op
@@ -26,11 +31,6 @@ from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
 
 # Convert and pack (numpy) data for C++ code generation
 from finn.util.data_packing import numpy_to_hls_code
-
-# The generic HW custom operator version of the operator as a base class
-from finn.custom_op.fpgadataflow.elementwise_binary import (  # noqa
-    ElementwiseBinaryOperation
-)
 
 # Mapping of memory resource attributes to the corresponding C++ HLS
 # pragma directives
