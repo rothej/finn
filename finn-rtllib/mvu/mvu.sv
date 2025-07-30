@@ -765,8 +765,8 @@ module mvu #(
 				else begin
 					localparam int unsigned  SUM_WIDTH = sumwidth(SIMD, 2, -1, 1);
 
-					uwire signed [1:0]  arg[SIMD];
-					uwire signed [SUM_WIDTH-1:0]  sum;
+					uwire [1:0]  arg[SIMD];
+					uwire [SUM_WIDTH-1:0]  sum;
 					add_multi #(.N(SIMD), .DEPTH(PIPELINE_DEPTH-5), .ARG_WIDTH(2), .ARG_LO(-1), .ARG_HI(1)) reduce (
 						.clk, .rst, .en,
 						.arg, .sum
@@ -804,9 +804,10 @@ module mvu #(
 					.RESET_ZERO(0)
 				) reduce (
 					.clk, .rst, .en,
-					.arg, .sum(lo4[i])
+					.arg, .sum
 				);
 				for(genvar  s = 0; s < SIMD; s++)  assign  arg[s] = p3[s][OFFSETS[i]+:LO_WIDTH];
+				assign	lo4[i] = sum;
 
 			end : genLo
 
