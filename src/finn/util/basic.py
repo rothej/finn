@@ -33,7 +33,7 @@ import tempfile
 from qonnx.util.basic import roundup_to_integer_multiple
 
 # test boards
-test_board_map = ["Pynq-Z1", "KV260_SOM", "ZCU104", "U250"]
+test_board_map = ["Pynq-Z1", "KV260_SOM", "ZCU104", "U250", "AUP-ZU3_8GB"]
 
 # mapping from PYNQ board names to FPGA part names
 pynq_part_map = dict()
@@ -47,6 +47,7 @@ pynq_part_map["ZCU111"] = "xczu28dr-ffvg1517-2-e"
 pynq_part_map["RFSoC2x2"] = "xczu28dr-ffvg1517-2-e"
 pynq_part_map["RFSoC4x2"] = "xczu48dr-ffvg1517-2-e"
 pynq_part_map["KV260_SOM"] = "xck26-sfvc784-2LV-c"
+pynq_part_map["AUP-ZU3_8GB"] = "xczu3eg-sfvc784-2-e"
 
 
 # native AXI HP port width (in bits) for PYNQ boards
@@ -61,6 +62,7 @@ pynq_native_port_width["ZCU111"] = 128
 pynq_native_port_width["RFSoC2x2"] = 128
 pynq_native_port_width["RFSoC4x2"] = 128
 pynq_native_port_width["KV260_SOM"] = 128
+pynq_native_port_width["AUP-ZU3_8GB"] = 128
 
 # Alveo device and platform mappings
 alveo_part_map = dict()
