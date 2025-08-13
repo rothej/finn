@@ -105,22 +105,6 @@ from finn.transformation.streamline.reorder import MoveMulPastJoinAdd
 from finn.util.fpgadataflow import is_fpgadataflow_node
 
 
-# Specializes all nodes to be implemented as HLS backend
-def specialize_hls(model: ModelWrapper):
-    # Mark all nodes to be specialized as HLS backend implementations
-    for node in model.graph.node:  # noqa: Duplicate test setup code
-        # Skip non-fpgadataflow backend operators as these do not have the
-        # preferred_impl_style attribute
-        if is_fpgadataflow_node(node):
-            # Get the CustomOp instance of the node to get access to the node
-            # attributes
-            inst = getCustomOp(node)
-            # Note: only HLS-based layers execute C++ Simulation
-            inst.set_nodeattr("preferred_impl_style", "hls")
-    # Turn all HWCustomOp layers into HLS specializations
-    return model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
-
-
 # Mapping of ElementwiseBinaryOperation specializations to numpy reference
 # implementation functions
 NUMPY_REFERENCES = {
@@ -401,7 +385,10 @@ def test_elementwise_binary_operation_cppsim(
     model = model.transform(InferDataTypes())
     model = model.transform(InferShapes())
     # Specializes all nodes to be implemented as HLS backend
-    model = specialize_hls(model)
+    model = model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
+
+    assert len(model.graph.node) == 1
+    assert model.graph.node[0].op_type == f"{op_type}_hls"
 
     # Try to minimize the bit-widths of all data types involved
     model = model.transform(MinimizeWeightBitWidth())
@@ -482,7 +469,10 @@ def test_elementwise_binary_operation_float_cppsim(
     model = model.transform(InferDataTypes())
     model = model.transform(InferShapes())
     # Specializes all nodes to be implemented as HLS backend
-    model = specialize_hls(model)
+    model = model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
+
+    assert len(model.graph.node) == 1
+    assert model.graph.node[0].op_type == f"{op_type}_hls"
 
     # Try to minimize the bit-widths of all data types involved
     model = model.transform(MinimizeWeightBitWidth())
@@ -557,7 +547,10 @@ def test_elementwise_binary_operation_rtlsim(
     model = model.transform(InferDataTypes())
     model = model.transform(InferShapes())
     # Specializes all nodes to be implemented as HLS backend
-    model = specialize_hls(model)
+    model = model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
+
+    assert len(model.graph.node) == 1
+    assert model.graph.node[0].op_type == f"{op_type}_hls"
 
     # Try to minimize the bit-widths of all data types involved
     model = model.transform(MinimizeWeightBitWidth())
