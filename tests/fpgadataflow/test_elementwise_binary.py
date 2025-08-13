@@ -1,43 +1,43 @@
-# fmt: off
-# Disable formatter. This is deliberately formatted to stay within 80 characters
-# per line. Black, however, formats some lines going beyond this.
+# Copyright (C) 2025, Advanced Micro Devices, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of FINN nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Testing framework
 import pytest
 
-# Numpy math and arrays
 import numpy as np
-
-# Create temporary files automatically deleted after integration test
 import tempfile
-
-# PyTorch required for integration test
 import torch
-
-# Export brevitas models to QONNX representation in integration test
 from brevitas.export import export_qonnx
-
-# Test the quantized elementwise addition operation from brevitas in integration
-# test: this one should be representative enough for the operator pattern
 from brevitas.nn import QuantEltwiseAdd
-
-# ONNX graph and tensor utility
 from onnx import TensorProto
 from onnx import helper as oh
-
-# QONNX/FINN datatypes
 from qonnx.core.datatype import DataType
-
-# QONNX wrapper to ONNX model graphs
 from qonnx.core.modelwrapper import ModelWrapper
-
-# Execute onnx model graphs
 from qonnx.core.onnx_exec import execute_onnx
-
-# Registry of all QONNX CustomOps
-from qonnx.custom_op.registry import getCustomOp
-
-# Cleanup transformations required after QONNX model import
 from qonnx.transformation.general import (
     ApplyConfig,
     GiveReadableTensorNames,
@@ -45,65 +45,35 @@ from qonnx.transformation.general import (
     GiveUniqueParameterTensors,
     RemoveUnusedTensors,
 )
-
-# Adds data layout annotations to the model graph to correctly convert
-# quantizers to multi-thresholds
 from qonnx.transformation.infer_data_layouts import InferDataLayouts
-
-# QONNX graph transformations for inferring datatypes and shapes
 from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
-
-# Utility for wrapping onnx graphs and generating tensor of FINN datatypes
 from qonnx.util.basic import gen_finn_dt_tensor, qonnx_make_model
 
-# FINN graph transformations for preparing simulation (cppsim or rtlsim)
 from finn.transformation.fpgadataflow.compile_cppsim import CompileCppSim
-
-# Mapping to hardware operators of the two operations relevant for the
-# integration test
-# Note: The integration test serves as the test-case for
-# InferElementwiseBinaryOperation
 from finn.transformation.fpgadataflow.convert_to_hw_layers import (
     InferElementwiseBinaryOperation,
     InferThresholdingLayer,
 )
-
-# Synthesizes HLS code generated from an operator to IP block
 from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
-
-# Bit-width optimization transformations
 from finn.transformation.fpgadataflow.minimize_accumulator_width import (
     MinimizeAccumulatorWidth,
 )
 from finn.transformation.fpgadataflow.minimize_weight_bit_width import (
     MinimizeWeightBitWidth,
 )
-
-# Transformations preparing the operators for C++ and RTL simulation
 from finn.transformation.fpgadataflow.prepare_cppsim import PrepareCppSim
 from finn.transformation.fpgadataflow.prepare_ip import PrepareIP
 from finn.transformation.fpgadataflow.prepare_rtlsim import PrepareRTLSim
 from finn.transformation.fpgadataflow.set_exec_mode import SetExecMode
 from finn.transformation.fpgadataflow.specialize_layers import SpecializeLayers
-
-# Converts between QONNX and FINN dialect of ONNX representation
 from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
-
-# Standard set of streamlining transformations delivered with FINN
 from finn.transformation.streamline import Streamline
-
-# Specific streamlining transformations which needs to be applied manually in
-# integration test
 from finn.transformation.streamline.absorb import (
     AbsorbMulIntoMultiThreshold,
     AbsorbSignBiasIntoMultiThreshold,
 )
 from finn.transformation.streamline.reorder import MoveMulPastJoinAdd
-
-# Checks whether a node is a fpgadataflow backend node handled by FINN
-from finn.util.fpgadataflow import is_fpgadataflow_node
-
 
 # Mapping of ElementwiseBinaryOperation specializations to numpy reference
 # implementation functions
@@ -129,14 +99,12 @@ NUMPY_REFERENCES = {
 }
 
 # Names of bitwise operations which somtimes require special treatment
-BITWISE = [
-    "ElementwiseBitwiseAnd", "ElementwiseBitwiseOr", "ElementwiseBitwiseXor"
-]
+BITWISE = ["ElementwiseBitwiseAnd", "ElementwiseBitwiseOr", "ElementwiseBitwiseXor"]
 
 
 # Creates a model executing a binary elementwise operation
 def mock_elementwise_binary_operation(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
 ):
     # Automatically derive the output shape by broadcasting the inputs
     out_shape = np.broadcast_shapes(lhs_shape, rhs_shape)
@@ -175,13 +143,9 @@ def mock_elementwise_binary_operation(
     # Construct output tensor value infos
     out = oh.make_tensor_value_info("out", TensorProto.FLOAT, out_shape)
     # Create a graph connecting the node to the inputs and outputs
-    graph = oh.make_graph(
-        [node], inputs=[lhs, rhs], outputs=[out], name="elementwise-binary"
-    )
+    graph = oh.make_graph([node], inputs=[lhs, rhs], outputs=[out], name="elementwise-binary")
     # Wrap the ONNX graph in QONNX model wrapper
-    model = ModelWrapper(
-        qonnx_make_model(graph, producer_name="elementwise-binary")
-    )
+    model = ModelWrapper(qonnx_make_model(graph, producer_name="elementwise-binary"))
 
     # Add datatype annotation to the value info of input tensors
     model.set_tensor_datatype("lhs", DataType[lhs_dtype])
@@ -193,10 +157,13 @@ def mock_elementwise_binary_operation(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above
-    *NUMPY_REFERENCES.keys()
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above
+        *NUMPY_REFERENCES.keys()
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["INT8"])
 # Data type of the right-hand-side input elements
@@ -204,31 +171,29 @@ def mock_elementwise_binary_operation(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["INT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 def test_elementwise_binary_operation_python(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -255,7 +220,7 @@ def test_elementwise_binary_operation_python(
         # Note: Need to make sure these have the right type for the Numpy API
         # Note: Assume all test cases fit into int64 without loss of precision
         context["lhs"].astype(np.int64),
-        context["rhs"].astype(np.int64)
+        context["rhs"].astype(np.int64),
     )
     # Execute the onnx model to collect the result
     o_produced = execute_onnx(model, context)["out"]
@@ -265,11 +230,14 @@ def test_elementwise_binary_operation_python(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above, except for the bitwise
-    # operations, for which floating-point doe not make sense
-    *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above, except for the bitwise
+        # operations, for which floating-point doe not make sense
+        *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["FLOAT32"])
 # Data type of the right-hand-side input elements
@@ -277,31 +245,29 @@ def test_elementwise_binary_operation_python(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["FLOAT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 def test_elementwise_binary_operation_float_python(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -333,10 +299,13 @@ def test_elementwise_binary_operation_float_python(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above
-    *NUMPY_REFERENCES.keys(),
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above
+        *NUMPY_REFERENCES.keys(),
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["INT8"])
 # Data type of the right-hand-side input elements
@@ -344,34 +313,32 @@ def test_elementwise_binary_operation_float_python(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["INT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # This is a slow running fpgadataflow type of test which requires vivado
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 def test_elementwise_binary_operation_cppsim(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -406,7 +373,7 @@ def test_elementwise_binary_operation_cppsim(
         # Note: Need to make sure these have the right type for the Numpy API
         # Note: Assume all test cases fit into int64 without loss of precision
         context["lhs"].astype(np.int64),
-        context["rhs"].astype(np.int64)
+        context["rhs"].astype(np.int64),
     )
     # Execute the onnx model to collect the result
     o_produced = execute_onnx(model, context)["out"]
@@ -416,11 +383,14 @@ def test_elementwise_binary_operation_cppsim(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above, except for the bitwise
-    # operations, for which floating-point doe not make sense
-    *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above, except for the bitwise
+        # operations, for which floating-point doe not make sense
+        *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["FLOAT32"])
 # Data type of the right-hand-side input elements
@@ -428,34 +398,32 @@ def test_elementwise_binary_operation_cppsim(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["FLOAT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # This is a slow running fpgadataflow type of test which requires vivado
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 def test_elementwise_binary_operation_float_cppsim(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -495,10 +463,13 @@ def test_elementwise_binary_operation_float_cppsim(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above
-    *NUMPY_REFERENCES.keys()
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above
+        *NUMPY_REFERENCES.keys()
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["INT8"])
 # Data type of the right-hand-side input elements
@@ -506,34 +477,32 @@ def test_elementwise_binary_operation_float_cppsim(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["INT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # This is a slow running fpgadataflow type of test which requires vivado
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 def test_elementwise_binary_operation_rtlsim(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -560,7 +529,7 @@ def test_elementwise_binary_operation_rtlsim(
     model = model.transform(SetExecMode("rtlsim"))
     # Generates the C++ source and compiles the RTL simulation
     model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))  # noqa
+    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
 
@@ -569,7 +538,7 @@ def test_elementwise_binary_operation_rtlsim(
         # Note: Need to make sure these have the right type for the Numpy API
         # Note: Assume all test cases fit into int64 without loss of precision
         context["lhs"].astype(np.int64),
-        context["rhs"].astype(np.int64)
+        context["rhs"].astype(np.int64),
     )
     # Execute the onnx model to collect the result
     o_produced = execute_onnx(model, context)["out"]
@@ -579,11 +548,14 @@ def test_elementwise_binary_operation_rtlsim(
 
 
 # Operator type to be tested
-@pytest.mark.parametrize("op_type", [  # noqa: Duplicate test setup
-    # Test all Numpy references specified above, except for the bitwise
-    # operations, for which floating-point doe not make sense
-    *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
-])
+@pytest.mark.parametrize(
+    "op_type",
+    [
+        # Test all Numpy references specified above, except for the bitwise
+        # operations, for which floating-point doe not make sense
+        *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
+    ],
+)
 # Data type of the left-hand-side input elements
 @pytest.mark.parametrize("lhs_dtype", ["FLOAT32"])
 # Data type of the right-hand-side input elements
@@ -591,34 +563,32 @@ def test_elementwise_binary_operation_rtlsim(
 # Data type of the output elements
 @pytest.mark.parametrize("out_dtype", ["FLOAT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [
-    [3, 1, 7, 1], [1]
-])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize("rhs_shape", [
-    [3, 32, 1, 16],
-])
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [
-    [], ["lhs"], ["rhs"], ["lhs", "rhs"]
-])
+@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # This is a slow running fpgadataflow type of test which requires vivado
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 def test_elementwise_binary_operation_float_rtlsim(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe,
-        initializers
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
     # Make dummy model for testing
-    model = mock_elementwise_binary_operation(  # noqa: Duplicate test setup
+    model = mock_elementwise_binary_operation(
         op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
     )
     # Prepare the execution context
     context = {
         "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape)
+        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -645,7 +615,7 @@ def test_elementwise_binary_operation_float_rtlsim(
     model = model.transform(SetExecMode("rtlsim"))
     # Generates the C++ source and compiles the RTL simulation
     model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))  # noqa
+    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
 
@@ -680,7 +650,7 @@ def test_elementwise_binary_operation_float_rtlsim(
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 def test_elementwise_binary_operation_integration_elementwise_add(
-        lhs_shape, rhs_shape, initializers, pe
+    lhs_shape, rhs_shape, initializers, pe
 ):
     # PyTorch model wrapping the component(s) to be tested
     class Dummy(torch.nn.Module):
@@ -747,15 +717,17 @@ def test_elementwise_binary_operation_integration_elementwise_add(
         model = model.transform(Streamline())
         # Convert layers to hardware custom operations
         model = model.transform(InferThresholdingLayer())
-        model = model.transform(InferElementwiseBinaryOperation(
-            # We want to keep the output de-quantization off-chip
-            _filter=InferElementwiseBinaryOperation.reject_floats
-        ))
+        model = model.transform(
+            InferElementwiseBinaryOperation(
+                # We want to keep the output de-quantization off-chip
+                _filter=InferElementwiseBinaryOperation.reject_floats
+            )
+        )
 
         # Apply folding config to set the PE parallelism for hardware layers
-        model = model.transform(ApplyConfig({
-            "Defaults": {"PE": [pe, ["ElementwiseAdd", "Thresholding"]]}
-        }))
+        model = model.transform(
+            ApplyConfig({"Defaults": {"PE": [pe, ["ElementwiseAdd", "Thresholding"]]}})
+        )
 
         # Try to minimize the bit-widths of all data types involved
         model = model.transform(MinimizeWeightBitWidth())
@@ -791,15 +763,16 @@ def test_elementwise_binary_operation_integration_elementwise_add(
         # Compare the expected to the produced
         # Note: Only test for close up to some tolerance as the modelo has
         # streamlined, which may involve rounding
-        assert np.allclose(out_produced, out_expected, atol=1e-3), \
-            "Python simulation verification failed"
+        assert np.allclose(
+            out_produced, out_expected, atol=1e-3
+        ), "Python simulation verification failed"
 
         # Apply folding config to implement Thresholding layers in RTL mode
         # Note: Must be done in RTL for now to avoid test failing due to
         # PE-parallel stream being too wide for Vitis HLS.
-        model = model.transform(ApplyConfig({
-            "Defaults": {"preferred_impl_style": ["rtl", ["Thresholding"]]}
-        }))
+        model = model.transform(
+            ApplyConfig({"Defaults": {"preferred_impl_style": ["rtl", ["Thresholding"]]}})
+        )
         # # Specializes all nodes to their backend implementation
         model = model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
 
@@ -814,14 +787,15 @@ def test_elementwise_binary_operation_integration_elementwise_add(
         # Compare the expected to the produced
         # Note: Only test for close up to some tolerance as the modelo has
         # streamlined, which may involve rounding
-        assert np.allclose(out_produced, out_expected, atol=1e-3), \
-            "C++ simulation verification failed"
+        assert np.allclose(
+            out_produced, out_expected, atol=1e-3
+        ), "C++ simulation verification failed"
 
         # Set model execution mode to RTL simulation
         model = model.transform(SetExecMode("rtlsim"))
         model = model.transform(GiveUniqueNodeNames())
         # Generates the C++ source and compiles the RTL simulation
-        model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))  # noqa
+        model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
         model = model.transform(HLSSynthIP())
         model = model.transform(PrepareRTLSim())
         # Execute the onnx model to collect the result
@@ -829,5 +803,6 @@ def test_elementwise_binary_operation_integration_elementwise_add(
         # Compare the expected to the produced
         # Note: Only test for close up to some tolerance as the modelo has
         # streamlined, which may involve rounding
-        assert np.allclose(out_produced, out_expected, atol=1e-3), \
-            "RTL simulation verification failed"
+        assert np.allclose(
+            out_produced, out_expected, atol=1e-3
+        ), "RTL simulation verification failed"

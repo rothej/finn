@@ -1863,36 +1863,17 @@ class InferElementwiseBinaryOperation(Transformation):
                 lift_to_rank1(node.input[0], model)
                 lift_to_rank1(node.input[1], model)
 
-                # fmt: off
-                # Disable formatter. This is deliberately formatted to stay
-                # within 80 characters per line. Black, however, formats some
-                # lines going beyond this.
-
                 # Insert data type attributes from "context" into the CustomOp
                 # node
                 # TODO: Find a way to handle this via data type inference?
-                inst.set_nodeattr(
-                    "lhs_dtype", str(model.get_tensor_datatype(node.input[0]))
-                )
-                inst.set_nodeattr(
-                    "rhs_dtype", str(model.get_tensor_datatype(node.input[1]))
-                )
-                inst.set_nodeattr(
-                    "out_dtype", str(model.get_tensor_datatype(node.output[0]))
-                )
+                inst.set_nodeattr("lhs_dtype", str(model.get_tensor_datatype(node.input[0])))
+                inst.set_nodeattr("rhs_dtype", str(model.get_tensor_datatype(node.input[1])))
+                inst.set_nodeattr("out_dtype", str(model.get_tensor_datatype(node.output[0])))
                 # Insert shape attributes from "context" into the CustomOp node
                 # TODO: Find a way to handle this via shape inference?
-                inst.set_nodeattr(
-                    "lhs_shape", model.get_tensor_shape(node.input[0])
-                )
-                inst.set_nodeattr(
-                    "rhs_shape", model.get_tensor_shape(node.input[1])
-                )
-                inst.set_nodeattr(
-                    "out_shape", model.get_tensor_shape(node.output[0])
-                )
-
-                # fmt: on
+                inst.set_nodeattr("lhs_shape", model.get_tensor_shape(node.input[0]))
+                inst.set_nodeattr("rhs_shape", model.get_tensor_shape(node.input[1]))
+                inst.set_nodeattr("out_shape", model.get_tensor_shape(node.output[0]))
 
                 # Consider the graph to be modified, triggering exhaustive
                 # re-application of this transformation

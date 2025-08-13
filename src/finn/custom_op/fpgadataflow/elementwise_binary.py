@@ -1,32 +1,40 @@
-# fmt: off
-# Disable formatter. This is deliberately formatted to stay within 80 characters
-# per line. Black, however, formats some lines going beyond this.
+# Copyright (C) 2025, Advanced Micro Devices, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of FINN nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Numpy math and arrays
 import numpy as np
-
-# Operating system stuff, e.g. paths
 import os
-
-# Python warning subsystem
 import warnings
-
-# Helper for creating ONNX nodes
 from onnx import helper as oh
-
-# QONNX/FINN datatypes
 from qonnx.core.datatype import DataType
-
-# QONNX wrapper to ONNX model graphs
 from qonnx.core.modelwrapper import ModelWrapper
 
-# Utility for registering HWCustomOp implementations into the module scope
 from finn.custom_op.fpgadataflow import register_custom_op
-
-# Derive custom operators form the FINN base custom op
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
-
-# Converts inputs/outputs to/from RTL simulation format
 from finn.util.data_packing import npy_to_rtlsim_input, rtlsim_output_to_npy
 
 
@@ -61,42 +69,40 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Start from parent operator class attributes
         attrs = HWCustomOp.get_nodeattr_types(self)
         # Update attributes dictionary for new custom operator
-        attrs.update({
-            # Data type of the left-hand-side input elements
-            "lhs_dtype": ("s", True, ""),
-            # Data type of the right-hand-side input elements
-            "rhs_dtype": ("s", True, ""),
-            # Data type of the output elements
-            "out_dtype": ("s", True, ""),
-            # Shape of the left-hand-side input
-            "lhs_shape": ("ints", True, [1]),
-            # Shape of the right-hand-side input
-            "rhs_shape": ("ints", True, [1]),
-            # Shape of the output, mus correspond to multi-directional
-            # broadcasting of the left- and right-hand-side
-            "out_shape": ("ints", True, [1]),
-            # Style specifies how the left-hand-side input is provided
-            #   Note: Might be inferred from the context
-            "lhs_style": ("s", False, "input", {"input", "const"}),
-            # Style specifies how the right-hand-side input is provided
-            #   Note: Might be inferred from the context
-            "rhs_style": ("s", False, "input", {"input", "const"}),
-            # Number of elements in the last dimensions processed in parallel
-            "PE": ("i", False, 1),
-            # Possible execution modes for simulating this node
-            #   Note: Override to support python mode
-            "exec_mode": (
-                "s", False, "python", {"", "rtlsim", "cppsim", "python"}
-            ),
-            # FPGA resource type for memories/internal buffers of the operator
-            "ram_style": (
-                "s", False, "auto", {"auto", "block", "distributed", "ultra"}
-            ),
-            # Input and output FIFO depths for multi-I/O nodes
-            #   Note: Need to override here as there might be two inputs
-            "inFIFODepths": ("ints", False, [2, 2]),
-            "outFIFODepths": ("ints", False, [2]),
-        })
+        attrs.update(
+            {
+                # Data type of the left-hand-side input elements
+                "lhs_dtype": ("s", True, ""),
+                # Data type of the right-hand-side input elements
+                "rhs_dtype": ("s", True, ""),
+                # Data type of the output elements
+                "out_dtype": ("s", True, ""),
+                # Shape of the left-hand-side input
+                "lhs_shape": ("ints", True, [1]),
+                # Shape of the right-hand-side input
+                "rhs_shape": ("ints", True, [1]),
+                # Shape of the output, mus correspond to multi-directional
+                # broadcasting of the left- and right-hand-side
+                "out_shape": ("ints", True, [1]),
+                # Style specifies how the left-hand-side input is provided
+                #   Note: Might be inferred from the context
+                "lhs_style": ("s", False, "input", {"input", "const"}),
+                # Style specifies how the right-hand-side input is provided
+                #   Note: Might be inferred from the context
+                "rhs_style": ("s", False, "input", {"input", "const"}),
+                # Number of elements in the last dimensions processed in parallel
+                "PE": ("i", False, 1),
+                # Possible execution modes for simulating this node
+                #   Note: Override to support python mode
+                "exec_mode": ("s", False, "python", {"", "rtlsim", "cppsim", "python"}),
+                # FPGA resource type for memories/internal buffers of the operator
+                "ram_style": ("s", False, "auto", {"auto", "block", "distributed", "ultra"}),
+                # Input and output FIFO depths for multi-I/O nodes
+                #   Note: Need to override here as there might be two inputs
+                "inFIFODepths": ("ints", False, [2, 2]),
+                "outFIFODepths": ("ints", False, [2]),
+            }
+        )
         # Return updated attribute dictionary
         return attrs
 
@@ -156,26 +162,28 @@ class ElementwiseBinaryOperation(HWCustomOp):
     # Makes an operation compatible with the output shape for shape inference
     #   Note: Propagates shape forward, i.e., never asks for the shape of the
     #   output, even if it seems easier.
-    def make_shape_compatible_op(self, model: ModelWrapper):  # noqa
+    def make_shape_compatible_op(self, model: ModelWrapper):
         # Get the node wrapped by this custom op
         node = self.onnx_node
         # There must be exactly two inputs to the binary operation
-        assert len(node.input) == 2, \
-            f"Binary operation {node.name} requires exactly two inputs"
+        assert len(node.input) == 2, f"Binary operation {node.name} requires exactly two inputs"
         # Validate input shapes match what is stored as attributes
-        assert model.get_tensor_shape(node.input[0]) == self.lhs_shape, \
-            f"Input shape mismatch: {node.name} {node.input[0]}"
-        assert model.get_tensor_shape(node.input[1]) == self.rhs_shape, \
-            f"Input shape mismatch: {node.name} {node.input[1]}"
+        assert (
+            model.get_tensor_shape(node.input[0]) == self.lhs_shape
+        ), f"Input shape mismatch: {node.name} {node.input[0]}"
+        assert (
+            model.get_tensor_shape(node.input[1]) == self.rhs_shape
+        ), f"Input shape mismatch: {node.name} {node.input[1]}"
         # Validate broadcasting of inputs to the output shape
-        assert (list(np.broadcast_shapes(self.lhs_shape, self.rhs_shape))
-                == self.out_shape), f"Shape broadcast mismatch: {node.name}"
+        assert (
+            list(np.broadcast_shapes(self.lhs_shape, self.rhs_shape)) == self.out_shape
+        ), f"Shape broadcast mismatch: {node.name}"
         # Simulate behavior via the standard ONNX add operation
         return oh.make_node("Add", node.input, node.output)
 
     # Infers the datatype of the node output
-    def infer_node_datatype(self, model: ModelWrapper):  # noqa
-        # Get the node wrapped by this custom op  # noqa Duplicate
+    def infer_node_datatype(self, model: ModelWrapper):
+        # Get the node wrapped by this custom op
         node = self.onnx_node
         # Test for changing left-hand-side input datatype
         if model.get_tensor_datatype(node.input[0]) != self.lhs_dtype:
@@ -183,8 +191,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             new_dtype = model.get_tensor_datatype(node.input[0])
             # Issue a warning message
             warnings.warn(
-                f"{node.name}: lhs_dtype changing from"
-                f" {self.lhs_dtype} to {new_dtype}"
+                f"{node.name}: lhs_dtype changing from {self.lhs_dtype} to {new_dtype}"
             )
             # Set the new datatype attribute
             self.set_nodeattr("lhs_dtype", new_dtype.name)
@@ -194,8 +201,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             new_dtype = model.get_tensor_datatype(node.input[1])
             # Issue a warning message
             warnings.warn(
-                f"{node.name}: rhs_dtype changing from"
-                f" {self.rhs_dtype} to {new_dtype}"
+                f"{node.name}: rhs_dtype changing from {self.rhs_dtype} to {new_dtype}"
             )
             # Set the new datatype attribute
             self.set_nodeattr("rhs_dtype", new_dtype.name)
@@ -203,7 +209,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
         model.set_tensor_datatype(node.output[0], self.out_dtype)
 
     # Executes elementwise operation in python
-    def _execute_node_python(self, context, graph):  # noqa: graph unused
+    def _execute_node_python(self, context, graph):
         # Get the node wrapped by this custom op
         node = self.onnx_node
         # Get the inputs out of the execution context
@@ -226,26 +232,28 @@ class ElementwiseBinaryOperation(HWCustomOp):
         context[node.output[0]] = out.astype(np.float32)
 
     # Executes elementwise operation in C++ simulation
-    def _execute_node_cppsim(self, context, graph):  # noqa: graph unused
+    def _execute_node_cppsim(self, context, graph):
         # C++ Simulation needs to be implemented in HLS backend specialization
         raise NotImplementedError(
             f"exec_mode cppsim of {self.__class__.__name__} is not implemented!"
         )
 
     # Executes elementwise operation in RTL simulation
-    def _execute_node_rtlsim(self, context, graph):  # noqa: graph unused
-        # Get the node wrapped by this custom op  # noqa Duplicate
+    def _execute_node_rtlsim(self, context, graph):
+        # Get the node wrapped by this custom op
         node = self.onnx_node
         # Input data is stored in numpy files in the code generation dictionary
         code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
         # Get the inputs out of the execution context
-        lhs = context[node.input[0]]  # noqa: Duplicate code prepare simulation
-        rhs = context[node.input[1]]  # noqa: Duplicate code prepare simulation
+        lhs = context[node.input[0]]
+        rhs = context[node.input[1]]
         # Validate the shape of the inputs
-        assert list(lhs.shape) == self.get_normal_input_shape(ind=0), \
-            f"Input shape mismatch for {node.input[0]}"
-        assert list(rhs.shape) == self.get_normal_input_shape(ind=1), \
-            f"Input shape mismatch for {node.input[1]} {rhs.shape=}"
+        assert list(lhs.shape) == self.get_normal_input_shape(
+            ind=0
+        ), f"Input shape mismatch for {node.input[0]}"
+        assert list(rhs.shape) == self.get_normal_input_shape(
+            ind=1
+        ), f"Input shape mismatch for {node.input[1]} {rhs.shape=}"
         # Reshape the inputs into folded form
         lhs = lhs.reshape(self.get_folded_input_shape(ind=0))
         rhs = rhs.reshape(self.get_folded_input_shape(ind=1))
@@ -257,10 +265,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
         np.save(rhs_filename, rhs)
         # Start collecting inputs/outputs to the RTL simulation in a dictionary
         #   Note: Prepare one output empty output list
-        io_dict = {
-            "inputs": {},
-            "outputs": {"out": []}
-        }
+        io_dict = {"inputs": {}, "outputs": {"out": []}}
         # Type and width of the input tensors
         lhs_dtype = self.get_input_datatype(ind=0)
         lhs_width = self.get_instream_width(ind=0)
@@ -271,20 +276,16 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # inserted into the RTL simulation inputs
         if self.lhs_style == "input":
             # Convert inputs to RTL simulation format
-            io_dict["inputs"]["lhs"] = npy_to_rtlsim_input(
-                lhs_filename, lhs_dtype, lhs_width
-            )
+            io_dict["inputs"]["lhs"] = npy_to_rtlsim_input(lhs_filename, lhs_dtype, lhs_width)
 
         # If the right-hand-side is provided as runtime input it needs to be
         # inserted into the RTL simulation inputs
         if self.rhs_style == "input":
             # Convert inputs to RTL simulation format
-            io_dict["inputs"]["rhs"] = npy_to_rtlsim_input(
-                rhs_filename, rhs_dtype, rhs_width
-            )
+            io_dict["inputs"]["rhs"] = npy_to_rtlsim_input(rhs_filename, rhs_dtype, rhs_width)
 
         # Setup PyVerilator simulation of the node
-        sim = self.get_rtlsim()  # noqa: Duplicate code prepare simulation
+        sim = self.get_rtlsim()
         # Reset the RTL simulation; finnxsi toggles the clock
         super().reset_rtlsim(sim)
         # Run the RTL Simulation
@@ -293,21 +294,17 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Collect the output from RTL simulation
         out = io_dict["outputs"]["out"]
         # Type and sizes of the output tensor
-        dtype = self.get_output_datatype(ind=0)  # noqa: Duplicate readout code
+        dtype = self.get_output_datatype(ind=0)
         width = self.get_outstream_width(ind=0)
         shape = self.get_folded_output_shape(ind=0)
         # Path to store the intermediate numpy file
         filename = os.path.join(code_gen_dir, "out.npy")
         # Convert from RTL simulation format to numpy format
-        rtlsim_output_to_npy(
-            out, filename, dtype, shape, width, dtype.bitwidth()
-        )
+        rtlsim_output_to_npy(out, filename, dtype, shape, width, dtype.bitwidth())
         # Load the generated output numpy file
         out = np.load(filename)
         # Reshape the folded output and insert into the execution context
-        context[node.output[0]] = out.reshape(
-            self.get_normal_output_shape(ind=0)
-        )
+        context[node.output[0]] = out.reshape(self.get_normal_output_shape(ind=0))
 
     # Executes elementwise op in simulation (either python c++ or rtl sim)
     def execute_node(self, context, graph):
@@ -407,9 +404,9 @@ class ElementwiseBinaryOperation(HWCustomOp):
         if not all([self.lhs_dtype.is_integer(), self.rhs_dtype.is_integer()]):
             # Check the annotated tensor data type corresponds to the stored
             # attribute
-            assert (model.get_tensor_datatype(self.onnx_node.output[0])
-                    == self.out_dtype), \
-                f"Output type mismatch for {self.onnx_node.name}"
+            assert (
+                model.get_tensor_datatype(self.onnx_node.output[0]) == self.out_dtype
+            ), f"Output type mismatch for {self.onnx_node.name}"
             # Exit here, returning the not-minimized data type
             return self.out_dtype
         # Call the output type derivation specialized by the concrete operator
@@ -428,8 +425,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Depends on the actual operation performed and must be specialized by
         # the concrete implementations
         raise NotImplementedError(
-            f"_derive_out_dtype of {self.__class__.__name__}"
-            f" is not implemented!"
+            f"_derive_out_dtype of {self.__class__.__name__} is not implemented!"
         )
 
     # Minimizes the width of the weight data type, 'weight' here due to
@@ -449,8 +445,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             _max = lhs.max()
             # Determine whether signed or unsigned type is required for
             # representing the weights and select the largest "signed magnitude"
-            _mag = _max if _min > 0 else \
-                _min if (abs(_min) > _max) else (-_max - 1)
+            _mag = _max if _min > 0 else _min if (abs(_min) > _max) else (-_max - 1)
             # Smallest data type large enough to represent this range of values
             dtype = DataType.get_smallest_possible(_mag)
             # Update the corresponding data type attribute of the node
@@ -472,8 +467,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             _max = rhs.max()
             # Determine whether signed or unsigned type is required for
             # representing the weights and select the largest "signed magnitude"
-            _mag = _max if _min > 0 else \
-                _min if (abs(_min) > _max) else (-_max - 1)
+            _mag = _max if _min > 0 else _min if (abs(_min) > _max) else (-_max - 1)
             # Smallest data type large enough to represent this range of values
             dtype = DataType.get_smallest_possible(_mag)
             # Update the corresponding data type attribute of the node
@@ -739,7 +733,7 @@ class ElementwiseBitwiseAnd(ElementwiseBinaryOperation):
 
     # Derives the output data type according to UG1399
     def _derive_out_dtype(self, model: ModelWrapper):
-        # Get the width of the data types of the inputs  # noqa: Duplicate
+        # Get the width of the data types of the inputs
         lhs_width = self.lhs_dtype.bitwidth()
         rhs_width = self.rhs_dtype.bitwidth()
         # Check whether the addition operation is a signed addition
@@ -761,7 +755,7 @@ class ElementwiseBitwiseOr(ElementwiseBinaryOperation):
 
     # Derives the output data type according to UG1399
     def _derive_out_dtype(self, model: ModelWrapper):
-        # Get the width of the data types of the inputs  # noqa: Duplicate
+        # Get the width of the data types of the inputs
         lhs_width = self.lhs_dtype.bitwidth()
         rhs_width = self.rhs_dtype.bitwidth()
         # Check whether the addition operation is a signed addition
@@ -783,7 +777,7 @@ class ElementwiseBitwiseXor(ElementwiseBinaryOperation):
 
     # Derives the output data type according to UG1399
     def _derive_out_dtype(self, model: ModelWrapper):
-        # Get the width of the data types of the inputs  # noqa: Duplicate
+        # Get the width of the data types of the inputs
         lhs_width = self.lhs_dtype.bitwidth()
         rhs_width = self.rhs_dtype.bitwidth()
         # Check whether the addition operation is a signed addition
@@ -804,25 +798,23 @@ class ElementwiseBitShift(ElementwiseBinaryOperation):
         # Start from parent operator class attributes
         attrs = ElementwiseBinaryOperation.get_nodeattr_types(self)
         # Update attributes dictionary for new custom operator
-        attrs.update({
-            # Direction of the bit-shift
-            "direction": ("s", True, "", {"LEFT", "RIGHT"}),
-        })
+        attrs.update(
+            {
+                # Direction of the bit-shift
+                "direction": ("s", True, "", {"LEFT", "RIGHT"}),
+            }
+        )
         # Return updated attribute dictionary
         return attrs
 
     @property
     def npy_op(self):
-        return {
-            "LEFT": np.left_shift, "RIGHT": np.right_shift
-        }[self.get_nodeattr("direction")]
+        return {"LEFT": np.left_shift, "RIGHT": np.right_shift}[self.get_nodeattr("direction")]
 
     # C++ operation template available as property
     @property
     def cpp_op(self) -> str:
-        return {
-            "LEFT": "({0} << {1})", "RIGHT": "({0} >> {1})"
-        }[self.get_nodeattr("direction")]
+        return {"LEFT": "({0} << {1})", "RIGHT": "({0} >> {1})"}[self.get_nodeattr("direction")]
 
     # RTL operation template available as property
     @property

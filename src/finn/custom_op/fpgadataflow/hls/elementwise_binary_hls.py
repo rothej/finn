@@ -1,48 +1,52 @@
-# fmt: off
-# Disable formatter. This is deliberately formatted to stay within 80 characters
-# per line. Black, however, formats some lines going beyond this.
+# Copyright (C) 2025, Advanced Micro Devices, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of FINN nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Numpy math and arrays
 import numpy as np
-
-# Operating system stuff, e.g. paths
 import os
-
-# Cleanup post-processing of generated code
 import textwrap
-
-# QONNX wrapper to ONNX model graphs
 from qonnx.core.modelwrapper import ModelWrapper
 
-# Specializations of the generic HW operator
 import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
-
-# The generic HW custom operator version of the operator as a base class
-from finn.custom_op.fpgadataflow.elementwise_binary import (  # noqa
-    ElementwiseBinaryOperation,
-)
-
-# Utility for registering HLSBackend HWCustomOp implementations into the module
-# scope
+from finn.custom_op.fpgadataflow.elementwise_binary import ElementwiseBinaryOperation
 from finn.custom_op.fpgadataflow.hls import register_custom_op
-
-# Base class for specializing HW operators as implemented via HLS
 from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
-
-# Convert and pack (numpy) data for C++ code generation
 from finn.util.data_packing import numpy_to_hls_code
 
 # Mapping of memory resource attributes to the corresponding C++ HLS
 # pragma directives
-RAM_STYLES = {
-    "auto": "AUTO", "block": "BRAM", "distributed": "LUTRAM", "ultra": "URAM"
-}
+RAM_STYLES = {"auto": "AUTO", "block": "BRAM", "distributed": "LUTRAM", "ultra": "URAM"}
 
 
 # HLS Backend specialization of the binary elementwise operation operator
-class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
+class ElementwiseBinaryOperation_hls(
     # CapWords convention
-    ElementwiseBinaryOperation, HLSBackend
+    ElementwiseBinaryOperation,
+    HLSBackend,
 ):
     # Node attributes matching the HLS operator
     def get_nodeattr_types(self):
@@ -55,19 +59,21 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         return attrs
 
     # Executes elementwise operation in C++ simulation
-    def _execute_node_cppsim(self, context, graph):  # noqa: graph unused
+    def _execute_node_cppsim(self, context, graph):
         # Get the node wrapped by this custom op
         node = self.onnx_node
         # Input data is stored in numpy files in the code generation dictionary
         code_gen_dir = self.get_nodeattr("code_gen_dir_cppsim")
         # Get the inputs out of the execution context
-        lhs = context[node.input[0]]  # noqa: Duplicate code prepare simulation
+        lhs = context[node.input[0]]
         rhs = context[node.input[1]]
         # Validate the shape of the inputs
-        assert list(lhs.shape) == self.get_normal_input_shape(ind=0), \
-            f"Input shape mismatch for {node.input[0]}"
-        assert list(rhs.shape) == self.get_normal_input_shape(ind=1), \
-            f"Input shape mismatch for {node.input[1]} {rhs.shape=}"
+        assert list(lhs.shape) == self.get_normal_input_shape(
+            ind=0
+        ), f"Input shape mismatch for {node.input[0]}"
+        assert list(rhs.shape) == self.get_normal_input_shape(
+            ind=1
+        ), f"Input shape mismatch for {node.input[1]} {rhs.shape=}"
         # Reshape the inputs into folded form
         lhs = lhs.reshape(self.get_folded_input_shape(ind=0))
         rhs = rhs.reshape(self.get_folded_input_shape(ind=1))
@@ -81,17 +87,12 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         # Load the output numpy file generated by the C++ simulation
         out = np.load(os.path.join(code_gen_dir, "out.npy"))
         # Reshape the folded output and insert into the execution context
-        context[node.output[0]] = out.reshape(
-            self.get_normal_output_shape(ind=0)
-        )
+        context[node.output[0]] = out.reshape(self.get_normal_output_shape(ind=0))
 
     # Maximum width of any ap_int used in this operator
     def get_ap_int_max_w(self):
         # Find the widths of the widest of the two inputs
-        i_bits_max = max(
-            self.get_instream_width(ind=0),
-            self.get_instream_width(ind=1)
-        )
+        i_bits_max = max(self.get_instream_width(ind=0), self.get_instream_width(ind=1))
         # Width of the output, there is just one output
         # Note: there is one output per replica
         o_bits_max = self.get_outstream_width(ind=0)
@@ -139,7 +140,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             lhs = lhs.reshape(*self.get_folded_input_shape(ind=0))
             # Need to make sure there are PE many elements which can be accessed
             # in parallel
-            if lhs.shape[-1] != self.pe:  # noqa: Duplicate
+            if lhs.shape[-1] != self.pe:
                 # Broadcast the parameter tensor "offline" to have PE elements
                 # TODO: This replicates all parameters and might be inefficient
                 #  in terms of memory utilization. It might be ore efficient to
@@ -154,20 +155,16 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             lhs = lhs.reshape(*lhs_shape)
             # Generate C++ array initialization code
             # Note: no packing, but with variable name/type declaration
-            lhs_code = numpy_to_hls_code(
-                lhs, self.lhs_dtype, "lhs", False, False
-            )
+            lhs_code = numpy_to_hls_code(lhs, self.lhs_dtype, "lhs", False, False)
             # Add pragma configuring the storage type to use for the parameter
             # tensors: This is a constant parameter implemented as dual-port ROM
             self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS BIND_STORAGE"
-                f" variable=lhs type=ROM_2P impl={ram_style}"
+                f"#pragma HLS BIND_STORAGE variable=lhs type=ROM_2P impl={ram_style}"
             )
             # Add pragma to partition the parameter tensor along the last
             # dimensions, i.e., the PE dimension for parallel access
             self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS ARRAY_PARTITION"
-                f" variable=lhs complete dim={len(lhs_shape)}"
+                f"#pragma HLS ARRAY_PARTITION variable=lhs complete dim={len(lhs_shape)}"
             )
 
         # Check for an initializer providing the right hand side input
@@ -182,7 +179,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             rhs = rhs.reshape(*self.get_folded_input_shape(ind=1))
             # Need to make sure there are PE many elements which can be accessed
             # in parallel
-            if rhs.shape[-1] != self.pe:  # noqa: Duplicate
+            if rhs.shape[-1] != self.pe:
                 # Broadcast the parameter tensor "offline" to have PE elements
                 # TODO: This replicates all parameters and might be inefficient
                 #  in terms of memory utilization. It might be ore efficient to
@@ -197,31 +194,33 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             rhs = rhs.reshape(*rhs_shape)
             # Generate C++ array initialization code
             # Note: no packing, but with variable name/type declaration
-            rhs_code = numpy_to_hls_code(
-                rhs, self.rhs_dtype, "rhs", False, False
-            )
+            rhs_code = numpy_to_hls_code(rhs, self.rhs_dtype, "rhs", False, False)
             # Add pragma configuring the storage type to use for the parameter
             # tensors: This is a constant parameter implemented as dual-port ROM
             self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS BIND_STORAGE"
-                f" variable=rhs type=ROM_2P impl={ram_style}"
+                f"#pragma HLS BIND_STORAGE variable=rhs type=ROM_2P impl={ram_style}"
             )
             # Add pragma to partition the parameter tensor along the last
             # dimensions, i.e., the PE dimension for parallel access
             self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS ARRAY_PARTITION"
-                f" variable=rhs complete dim={len(rhs_shape)}"
+                f"#pragma HLS ARRAY_PARTITION variable=rhs complete dim={len(rhs_shape)}"
             )
 
         # Open a file to store the thresholds parameters as C++ code
         with open(f"{code_gen_dir}/params.hpp", "w") as file:
             # Write lines of C++ code separated by newlines to the file
-            file.write("\n".join([
-                # Insert left-hand-side and right-hand-side parameter code and
-                # append a newline at the end of the file (to avoid problems
-                # when including, required by C standard?)
-                lhs_code, rhs_code, "\n"
-            ]))
+            file.write(
+                "\n".join(
+                    [
+                        # Insert left-hand-side and right-hand-side parameter code and
+                        # append a newline at the end of the file (to avoid problems
+                        # when including, required by C standard?)
+                        lhs_code,
+                        rhs_code,
+                        "\n",
+                    ]
+                )
+            )
 
     # Generates C++ code of type alias, global constant and macro definitions
     def defines(self, var):
@@ -266,9 +265,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             self.code_gen_dict["$READNPYDATA$"] += [
                 # Generate function call reading from file into the input stream
                 #   Note: Inputs are always represented as numpy floats
-                'npy2apintstream<LhsPacked, LhsType, LhsWidth, float>(',
+                "npy2apintstream<LhsPacked, LhsType, LhsWidth, float>(",
                 f'"{code_gen_dir}/lhs.npy", lhs_V, false',
-                ');'
+                ");",
             ]
         # If the right-hand-side is provided as runtime input, read code needs
         # to be generated
@@ -278,9 +277,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             self.code_gen_dict["$READNPYDATA$"] += [
                 # Generate function call reading from file into the input stream
                 #   Note: Inputs are always represented as numpy floats
-                'npy2apintstream<RhsPacked, RhsType, RhsWidth, float>(',
+                "npy2apintstream<RhsPacked, RhsType, RhsWidth, float>(",
                 f'"{code_gen_dir}/rhs.npy", rhs_V, false',
-                ');'
+                ");",
             ]
 
     # Generates C++ code for declaring all streams involved in C++ simulation
@@ -330,11 +329,7 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
 
             # Compare shapes from left to right removing dimensions as long as
             # they match
-            return *[
-                size for size, _ in dropwhile(
-                    lambda x: x[0] == x[1], zip(shape, like)
-                )
-            ],
+            return (*[size for size, _ in dropwhile(lambda x: x[0] == x[1], zip(shape, like))],)
 
         # Take away all contiguous dimensions where these align with the output
         # shape, as these can be consumed directly without buffering to be
@@ -351,23 +346,21 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             # Generate index operation [i] for "normal" dimensions but reduce to
             # hardcoded [0] for broadcast dimensions to repeat from a single
             # buffer slot
-            return "".join([
-                f"[i{d}]" if s != 1 else "[0]" for d, s in enumerate(shape)
-            ])
+            return "".join([f"[i{d}]" if s != 1 else "[0]" for d, s in enumerate(shape)])
 
         # Generate the C++ code for indexing the buffers
         lhs_index = {
             "input": make_index_string(lhs_buffer_shape),
-            "const": make_index_string(lhs_shape)
+            "const": make_index_string(lhs_shape),
         }[self.lhs_style]
         rhs_index = {
             "input": make_index_string(rhs_buffer_shape),
-            "const": make_index_string(rhs_shape)
+            "const": make_index_string(rhs_shape),
         }[self.rhs_style]
 
         # Generate C++ code for declaring an array of the buffer shapes
-        lhs_buffer_shape = "".join([f'[{size}]' for size in lhs_buffer_shape])
-        rhs_buffer_shape = "".join([f'[{size}]' for size in rhs_buffer_shape])
+        lhs_buffer_shape = "".join([f"[{size}]" for size in lhs_buffer_shape])
+        rhs_buffer_shape = "".join([f"[{size}]" for size in rhs_buffer_shape])
 
         # Number of dimensions of the (broadcast) output. All shapes will be
         # aligned to this number of dimensions.
@@ -424,12 +417,16 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             LhsType lhs{lhs_buffer_shape}[{self.pe}];
             #pragma HLS ARRAY_PARTITION variable=lhs complete dim={ndim}
             #pragma HLS BIND_STORAGE variable=lhs type=RAM_S2P impl={ram_style}
-            """ if self.lhs_style == "input" else """""",
+            """
+            if self.lhs_style == "input"
+            else """""",
             f"""
             RhsType rhs{rhs_buffer_shape}[{self.pe}];
             #pragma HLS ARRAY_PARTITION variable=rhs complete dim={ndim}
             #pragma HLS BIND_STORAGE variable=rhs type=RAM_S2P impl={ram_style}
-            """ if self.rhs_style == "input" else """""",
+            """
+            if self.rhs_style == "input"
+            else """""",
             # Buffer to hold the parallel output elements: Implement a simple
             # dual-port RAM for the output buffer, partitioned on the last,
             # i.e., the PE, axis for parallel access.
@@ -460,7 +457,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
                     lhs{lhs_index}[pe] = {unpack_buffer(lhs_shape)};
                 }}
             }}
-            """ if self.lhs_style == "input" else """""",
+            """
+            if self.lhs_style == "input"
+            else """""",
             # Read from the right-hand-side input stream if new elements are
             # needed according to broadcasting semantics
             f"""
@@ -473,7 +472,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
                     rhs{rhs_index}[pe] = {unpack_buffer(rhs_shape)};
                 }}
             }}
-            """ if self.rhs_style == "input" else """""",
+            """
+            if self.rhs_style == "input"
+            else """""",
             # Apply PE parallel elementwise operations by filling the operation
             # template
             f"""
@@ -517,9 +518,9 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
         self.code_gen_dict["$DATAOUTSTREAM$"] = [
             # Generate function call reading from stream into the output file
             #   Note: Outputs are always represented as numpy floats
-            'apintstream2npy<OutPacked, OutType, OutWidth, float>(',
+            "apintstream2npy<OutPacked, OutType, OutWidth, float>(",
             f'out_V, {shape}, "{code_gen_dir}/out.npy", false',
-            ');',
+            ");",
         ]
 
     # Generates C++ code for saving the output of C++ simulation to a file in
@@ -580,33 +581,25 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
             ]
 
         # No block-level I/O protocol for the function return value
-        self.code_gen_dict["$PRAGMAS$"].append(
-            "#pragma HLS INTERFACE ap_ctrl_none port=return"
-        )
+        self.code_gen_dict["$PRAGMAS$"].append("#pragma HLS INTERFACE ap_ctrl_none port=return")
 
     # Returns the names of input and output interfaces grouped by protocol
     def get_verilog_top_module_intf_names(self):
         # Start collecting interface names in a dictionary starting with clock
         # and reset
-        intf_names = {"clk": ["ap_clk"], "rst": ["ap_rst_n"]}  # noqa
+        intf_names = {"clk": ["ap_clk"], "rst": ["ap_rst_n"]}
         # AXI stream input interfaces
         intf_names["s_axis"] = []
         # If the left-hand-side is provided as runtime input interface names
         # need to be inserted
         if self.lhs_style == "input":
-            intf_names["s_axis"] += [(
-                "lhs_V", self.get_instream_width_padded(ind=0)
-            )]
+            intf_names["s_axis"] += [("lhs_V", self.get_instream_width_padded(ind=0))]
         # If the right-hand-side is provided as runtime input interface names
         # need to be inserted
         if self.rhs_style == "input":
-            intf_names["s_axis"] += [(
-                "rhs_V", self.get_instream_width_padded(ind=1)
-            )]
+            intf_names["s_axis"] += [("rhs_V", self.get_instream_width_padded(ind=1))]
         # AXI stream output interfaces
-        intf_names["m_axis"] = [
-            ("out_V", self.get_outstream_width_padded(ind=0))
-        ]
+        intf_names["m_axis"] = [("out_V", self.get_outstream_width_padded(ind=0))]
         # No AXI-MM, AXI-Lite or protocol-less interfaces
         intf_names["aximm"] = []
         intf_names["axilite"] = []
@@ -616,101 +609,110 @@ class ElementwiseBinaryOperation_hls(  # noqa: Class name does not follow
 
 
 # Derive a specialization to implement elementwise addition of two inputs
-@register_custom_op  # noqa: PyCharm sees all these specializations as duplicate
-class ElementwiseAdd_hls(  # noqa: Class name does not follow
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseAdd
-):
+@register_custom_op
+class ElementwiseAdd_hls(ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseAdd):
     pass
 
 
 # Derive a specialization to implement elementwise subtraction of two inputs
 @register_custom_op
-class ElementwiseSub_hls(  # noqa: Class name does not follow
+class ElementwiseSub_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseSub
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseSub,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise multiplication of two inputs
 @register_custom_op
-class ElementwiseMul_hls(  # noqa: Class name does not follow
+class ElementwiseMul_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseMul
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseMul,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise division of two inputs
 @register_custom_op
-class ElementwiseDiv_hls(  # noqa: Class name does not follow
+class ElementwiseDiv_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseDiv
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseDiv,
 ):
     pass
 
 
 # TODO: ElementwiseMod_hls - Requires extra attribute selecting the function
 
+
 # Derive a specialization to implement elementwise logical and of two inputs
 @register_custom_op
-class ElementwiseAnd_hls(  # noqa: Class name does not follow
+class ElementwiseAnd_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseAnd
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseAnd,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise logical or of two inputs
 @register_custom_op
-class ElementwiseOr_hls(  # noqa: Class name does not follow
+class ElementwiseOr_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseOr
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseOr,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise logical xor of two inputs
 @register_custom_op
-class ElementwiseXor_hls(  # noqa: Class name does not follow
+class ElementwiseXor_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseXor
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseXor,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise equal of two inputs
-@register_custom_op  # noqa: PyCharm sees all these specializations as duplicate
-class ElementwiseEqual_hls(  # noqa: Class name does not follow
+@register_custom_op
+class ElementwiseEqual_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseEqual
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseEqual,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise less of two inputs
 @register_custom_op
-class ElementwiseLess_hls(  # noqa: Class name does not follow
+class ElementwiseLess_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseLess
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseLess,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise less or equal of two inputs
 @register_custom_op
-class ElementwiseLessOrEqual_hls(  # noqa: Class name does not follow
+class ElementwiseLessOrEqual_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseLessOrEqual
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseLessOrEqual,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise greater of two inputs
 @register_custom_op
-class ElementwiseGreater_hls(  # noqa: Class name does not follow
+class ElementwiseGreater_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseGreater
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseGreater,
 ):
     pass
 
@@ -718,45 +720,50 @@ class ElementwiseGreater_hls(  # noqa: Class name does not follow
 # Derive a specialization to implement elementwise greater or equal of two
 # inputs
 @register_custom_op
-class ElementwiseGreaterOrEqual_hls(  # noqa: Class name does not follow
+class ElementwiseGreaterOrEqual_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseGreaterOrEqual
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseGreaterOrEqual,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise bitwise and of two inputs
 @register_custom_op
-class ElementwiseBitwiseAnd_hls(  # noqa: Class name does not follow
+class ElementwiseBitwiseAnd_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseBitwiseAnd
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseBitwiseAnd,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise bitwise or of two inputs
 @register_custom_op
-class ElementwiseBitwiseOr_hls(  # noqa: Class name does not follow
+class ElementwiseBitwiseOr_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseBitwiseOr
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseBitwiseOr,
 ):
     pass
 
 
 # Derive a specialization to implement elementwise bitwise xor of two inputs
 @register_custom_op
-class ElementwiseBitwiseXor_hls(  # noqa: Class name does not follow
+class ElementwiseBitwiseXor_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseBitwiseXor
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseBitwiseXor,
 ):
     pass
 
 
 # ElementwiseBitShift_hls - Requires extra attribute selecting the direction
 @register_custom_op
-class ElementwiseBitShift_hls(  # noqa: Class name does not follow
+class ElementwiseBitShift_hls(
     # CapWords convention
-    ElementwiseBinaryOperation_hls, elementwise_binary.ElementwiseBitShift
+    ElementwiseBinaryOperation_hls,
+    elementwise_binary.ElementwiseBitShift,
 ):
     # We need to resolve the attribute types due to multiple inheritance
     def get_nodeattr_types(self):
@@ -768,11 +775,12 @@ class ElementwiseBitShift_hls(  # noqa: Class name does not follow
         # Return the updated attributes dictionary
         return attrs
 
+
 # # Derive a specialization to implement elementwise power of two inputs
 # TODO: std::pow does not work for HLS types and hls::pow fails to link for some
 #  reason
 # @register_custom_op
-# class ElementwisePow_hls(  # noqa: Class name does not follow
+# class ElementwisePow_hls(
 #     # CapWords convention
 #     ElementwiseBinaryOperation_hls, elementwise_binary.ElementwisePow
 # ):

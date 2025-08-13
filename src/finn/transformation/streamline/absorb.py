@@ -108,7 +108,7 @@ class AbsorbSignBiasIntoMultiThreshold(Transformation):
 
 # Groups inputs by categories, i.e., groups dynamic inputs first, followed by
 # initializers. Keeps order of inputs in each category.
-def group_inputs_by_category(node: NodeProto, model: ModelWrapper):  # noqa
+def group_inputs_by_category(node: NodeProto, model: ModelWrapper):
     # First select all dynamic inputs, which are those without initializer
     # tensor
     dynamics = [i for i in node.input if model.get_initializer(i) is None]
@@ -151,16 +151,12 @@ class AbsorbAddIntoMultiThreshold(Transformation):
                     # TODO: No support for Rank >= 5
                     if layout is None and len(shape) < 5:
                         # Maps tensor rank to layout annotation
-                        # fmt:off
-                        rank_to_layout = {
-                            0: None, 1: "C", 2: "NC", 3: "NWC", 4: "NCHW"
-                        }
-                        # fmt:on
+                        rank_to_layout = {0: None, 1: "C", 2: "NC", 3: "NWC", 4: "NCHW"}
                         # Lookup the layout required by this input shape
                         layout = rank_to_layout[len(shape)]
                     # If there is a layout annotation, use this to determine the
                     # index of the channel dimension
-                    if layout is not None and "C" in layout:  # noqa: Duplicate
+                    if layout is not None and "C" in layout:
                         # Lookup the index in list
                         cdim = layout.index("C")
                     # If no layout has been annotated or there is no channel
@@ -179,7 +175,7 @@ class AbsorbAddIntoMultiThreshold(Transformation):
                     if is_scalar or A.shape[cdim] == A.size:
                         # Reshape addition parameters to have the elements/PE
                         # dimension first, aligned with the thresholds.
-                        Tnew = T - A.reshape(-1, 1)  # noqa: Not lowercase
+                        Tnew = T - A.reshape(-1, 1)
                         # compute new thresholds and set initializer
                         model.set_initializer(threshold_name, Tnew)
                         # wire add input directly to MultiThreshold
