@@ -190,9 +190,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             # Get the new datatype
             new_dtype = model.get_tensor_datatype(node.input[0])
             # Issue a warning message
-            warnings.warn(
-                f"{node.name}: lhs_dtype changing from {self.lhs_dtype} to {new_dtype}"
-            )
+            warnings.warn(f"{node.name}: lhs_dtype changing from {self.lhs_dtype} to {new_dtype}")
             # Set the new datatype attribute
             self.set_nodeattr("lhs_dtype", new_dtype.name)
         # Test for changing right-hand-side input datatype
@@ -200,9 +198,7 @@ class ElementwiseBinaryOperation(HWCustomOp):
             # Get the new datatype
             new_dtype = model.get_tensor_datatype(node.input[1])
             # Issue a warning message
-            warnings.warn(
-                f"{node.name}: rhs_dtype changing from {self.rhs_dtype} to {new_dtype}"
-            )
+            warnings.warn(f"{node.name}: rhs_dtype changing from {self.rhs_dtype} to {new_dtype}")
             # Set the new datatype attribute
             self.set_nodeattr("rhs_dtype", new_dtype.name)
         # Force the output data type stored as a node attribute
