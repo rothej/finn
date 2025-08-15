@@ -88,18 +88,6 @@ def _determine_impl_style(node, fpgapart, model):
     # check if user setting can be fulfilled
     # otherwise change impl_style
     elif impl_style == "hls":
-        if optype == "ConvolutionInputGenerator":
-            if not _swg_hls_possible(node):
-                warn_str = (
-                    """Settings are not supported in HLS. Node %s will automatically be
-                        set to RTL variant."""
-                    % node.name
-                )
-                warnings.warn(warn_str)
-                return "rtl"
-            else:
-                return "hls"
-
         if hls_variant:
             return "hls"
         elif rtl_variant:
@@ -192,40 +180,6 @@ def _dwc_determine_impl_style(node):
         return "rtl"
     else:
         return "hls"
-
-
-def _swg_hls_possible(node):
-    # there are some constraints to
-    # the HLS variant of the SWG
-    # first constraint to check is
-    # if user has set dynamic_mode to 1
-    # this is only supported in rtl variant
-    swg = getCustomOp(node)
-    if swg.get_nodeattr("dynamic_mode"):
-        return False
-    # the 2D HLS implementation for SWG
-    # can only be used for square inputs
-    # and no dilation
-    if swg.get_nodeattr("is1D"):
-        return True
-    else:
-        # extract all attributes to check
-        k = swg.get_nodeattr("ConvKernelDim")
-        ifm_dim = swg.get_nodeattr("IFMDim")
-        ofm_dim = swg.get_nodeattr("OFMDim")
-        s = swg.get_nodeattr("Stride")
-        d = swg.get_nodeattr("Dilation")
-        # check if square and dilation=1
-        if (
-            k[0] == k[1]
-            and ifm_dim[0] == ifm_dim[1]
-            and ofm_dim[0] == ofm_dim[1]
-            and s[0] == s[1]
-            and d[0] == d[1] == 1
-        ):
-            return True
-        else:
-            return False
 
 
 def _mvu_rtl_possible(n, fpgapart, model):

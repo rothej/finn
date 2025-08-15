@@ -58,7 +58,6 @@ from finn.transformation.fpgadataflow.specialize_layers import SpecializeLayers
 from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
 from finn.transformation.streamline import Streamline
 from finn.transformation.streamline.reorder import MakeMaxPoolNHWC
-from finn.util.fpgadataflow import is_fpgadataflow_node
 from finn.util.test import get_test_model_trained
 
 export_onnx_path_cnv = "test_convert_to_hw_layers_cnv.onnx"
@@ -107,10 +106,6 @@ def test_convert_to_hw_layers_cnv_w1a1(fused_activation):
     model = model.transform(to_hw.InferQuantizedMatrixVectorActivation())
     model = model.transform(to_hw.InferConvInpGen())
     model = model.transform(to_hw.InferPool())
-    for node in model.graph.node:
-        if is_fpgadataflow_node(node):
-            inst = getCustomOp(node)
-            inst.set_nodeattr("preferred_impl_style", "hls")
     model = model.transform(SpecializeLayers("xc7z020clg400-1"))
     for node in model.graph.node:
         if node.op_type == "MVAU_hls":
@@ -134,7 +129,7 @@ def test_convert_to_hw_layers_cnv_w1a1(fused_activation):
         assert len(finn_nodes) == 20
     else:
         assert len(finn_nodes) == 28
-        thr_nodes = model.get_nodes_by_op_type("Thresholding_hls")
+        thr_nodes = model.get_nodes_by_op_type("Thresholding_rtl")
         assert len(thr_nodes) == 8
     non_finn_nodes = model.get_non_finn_nodes()
     assert len(non_finn_nodes) == 5
@@ -142,7 +137,7 @@ def test_convert_to_hw_layers_cnv_w1a1(fused_activation):
     assert [x.op_type for x in non_finn_nodes] == exp_non_finn_nodes
     fc_nodes = model.get_nodes_by_op_type("MVAU_hls")
     assert len(fc_nodes) == 9
-    swg_nodes = model.get_nodes_by_op_type("ConvolutionInputGenerator_hls")
+    swg_nodes = model.get_nodes_by_op_type("ConvolutionInputGenerator_rtl")
     assert len(swg_nodes) == 6
     mp_nodes = model.get_nodes_by_op_type("Pool_hls")
     assert len(mp_nodes) == 2
