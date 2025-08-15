@@ -234,7 +234,7 @@ def test_elementwise_binary_operation_python(
     "op_type",
     [
         # Test all Numpy references specified above, except for the bitwise
-        # operations, for which floating-point doe not make sense
+        # operations, for which floating-point does not make sense
         *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
     ],
 )
@@ -387,7 +387,7 @@ def test_elementwise_binary_operation_cppsim(
     "op_type",
     [
         # Test all Numpy references specified above, except for the bitwise
-        # operations, for which floating-point doe not make sense
+        # operations, for which floating-point does not make sense
         *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
     ],
 )
@@ -552,7 +552,7 @@ def test_elementwise_binary_operation_rtlsim(
     "op_type",
     [
         # Test all Numpy references specified above, except for the bitwise
-        # operations, for which floating-point doe not make sense
+        # operations, for which floating-point does not make sense
         *sorted((NUMPY_REFERENCES.keys() - BITWISE)),
     ],
 )
