@@ -449,39 +449,48 @@ compilation transformations?
         """Function to generate the commands for the stream declaration in c++,
         is member function of HLSBackend class but might need to be filled
         by node."""
+        node = self.onnx_node
         cpp_interface = self.get_nodeattr("cpp_interface")
         self.code_gen_dict["$STREAMDECLARATIONS$"] = []
         if cpp_interface == "packed":
-            self.code_gen_dict["$STREAMDECLARATIONS$"].append(
-                'hls::stream<ap_uint<{}>> in0_V ("in0_V");'.format(self.get_instream_width())
-            )
-            self.code_gen_dict["$STREAMDECLARATIONS$"].append(
-                'hls::stream<ap_uint<{}>> out0_V ("out0_V");'.format(self.get_outstream_width())
-            )
+            for i, inp in enumerate(node.input):
+                self.code_gen_dict["$STREAMDECLARATIONS$"].append(
+                    'hls::stream<ap_uint<{}>> in{}_V ("in{}_V");'.format(
+                        self.get_instream_width(i), i, i
+                    )
+                )
+            for o, outp in enumerate(node.output):
+                self.code_gen_dict["$STREAMDECLARATIONS$"].append(
+                    'hls::stream<ap_uint<{}>> out{}_V ("out{}_V");'.format(
+                        self.get_outstream_width(o), o, o
+                    )
+                )
         else:
-            dtype = self.get_input_datatype()
-            if dtype == DataType["BIPOLAR"]:
-                # use binary for bipolar storage
-                dtype = DataType["BINARY"]
-            elem_input_hls_type = dtype.get_hls_datatype_str()
+            for i, inp in enumerate(node.input):
+                dtype = self.get_input_datatype(i)
+                if dtype == DataType["BIPOLAR"]:
+                    # use binary for bipolar storage
+                    dtype = DataType["BINARY"]
+                elem_input_hls_type = dtype.get_hls_datatype_str()
 
-            self.code_gen_dict["$STREAMDECLARATIONS$"].append(
-                'hls::stream<hls::vector<{},{}>> in0_V ("in0_V");'.format(
-                    elem_input_hls_type, self.get_folded_input_shape()[-1]
+                self.code_gen_dict["$STREAMDECLARATIONS$"].append(
+                    'hls::stream<hls::vector<{},{}>> in{}_V ("in{}_V");'.format(
+                        elem_input_hls_type, self.get_folded_input_shape(i)[-1], i, i
+                    )
                 )
-            )
 
-            dtype = self.get_output_datatype()
-            if dtype == DataType["BIPOLAR"]:
-                # use binary for bipolar storage
-                dtype = DataType["BINARY"]
-            elem_output_hls_type = dtype.get_hls_datatype_str()
+            for o, outp in enumerate(node.output):
+                dtype = self.get_output_datatype(o)
+                if dtype == DataType["BIPOLAR"]:
+                    # use binary for bipolar storage
+                    dtype = DataType["BINARY"]
+                elem_output_hls_type = dtype.get_hls_datatype_str()
 
-            self.code_gen_dict["$STREAMDECLARATIONS$"].append(
-                'hls::stream<hls::vector<{},{}>> out0_V ("out0_V");'.format(
-                    elem_output_hls_type, self.get_folded_output_shape()[-1]
+                self.code_gen_dict["$STREAMDECLARATIONS$"].append(
+                    'hls::stream<hls::vector<{},{}>> out{}_V ("out{}_V");'.format(
+                        elem_output_hls_type, self.get_folded_output_shape(o)[-1], o, o
+                    )
                 )
-            )
 
             if self.get_nodeattr("hls_style") == "freerunning":
                 self.code_gen_dict["$STREAMDECLARATIONS$"].append(
