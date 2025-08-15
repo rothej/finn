@@ -48,7 +48,6 @@ from finn.util.basic import make_build_dir
 from finn.util.test import load_test_checkpoint_or_skip
 
 target_clk_ns = 10
-build_board = "Pynq-Z1"
 build_dir = os.environ["FINN_BUILD_DIR"]
 
 
@@ -146,11 +145,13 @@ def test_end2end_cybsec_mlp_export():
     assert model.get_tensor_datatype(first_matmul_w_name) == DataType["INT2"]
 
 
+# board
+@pytest.mark.parametrized("build_board", ["Pynq-Z1", "AUP-ZU3_8GB"])
 @pytest.mark.xdist_group(name="end2end_cybsec")
 @pytest.mark.slow
 @pytest.mark.vivado
 @pytest.mark.end2end
-def test_end2end_cybsec_mlp_build():
+def test_end2end_cybsec_mlp_build(build_board):
     model_file = get_checkpoint_name("export")
     load_test_checkpoint_or_skip(model_file)
     output_dir = make_build_dir("test_end2end_cybsec_mlp_build")
