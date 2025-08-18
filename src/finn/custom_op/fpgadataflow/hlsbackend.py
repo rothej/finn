@@ -493,11 +493,12 @@ compilation transformations?
                 )
 
             if self.get_nodeattr("hls_style") == "freerunning":
-                self.code_gen_dict["$STREAMDECLARATIONS$"].append(
-                    'hls::stream<hls::vector<{},{}>> strm ("strm");'.format(
-                        elem_output_hls_type, self.get_folded_output_shape()[-1]
+                for o, outp in enumerate(node.output):
+                    self.code_gen_dict["$STREAMDECLARATIONS$"].append(
+                        'hls::stream<hls::vector<{},{}>> strm{} ("strm{}");'.format(
+                            elem_output_hls_type, self.get_folded_output_shape(o)[-1], o, o
+                        )
                     )
-                )
 
     @abstractmethod
     def docompute(self):
@@ -545,13 +546,16 @@ compilation transformations?
                 )
             else:
                 folded_shape = self.get_folded_output_shape(o)
+                out_vector = (
+                    f"strm{o}" if self.get_nodeattr("hls_style") == "freerunning" else f"out{o}_V"
+                )
                 self.code_gen_dict["$DATAOUTSTREAM$"].append(
                     'vectorstream2npy<%s, %s, %d>(%s, %s, "%s");'
                     % (
                         elem_hls_type,
                         npy_type,
                         folded_shape[-1],
-                        "strm" if self.get_nodeattr("hls_style") == "freerunning" else "out0_V",
+                        out_vector,
                         oshape_cpp_str,
                         npy_out,
                     )
@@ -594,4 +598,4 @@ compilation transformations?
 
     def timeout_read_stream(self):
         """Set reading output stream procedure for HLS functions defined for one clock cycle"""
-        self.code_gen_dict["$TIMEOUT_READ_STREAM$"] = ["strm << out0_V.read();"]
+        self.code_gen_dict["$TIMEOUT_READ_STREAM$"] = ["strm0 << out0_V.read();"]
