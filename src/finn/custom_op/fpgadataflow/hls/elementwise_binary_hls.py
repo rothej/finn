@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
+import os
 import textwrap
 from qonnx.core.modelwrapper import ModelWrapper
 
@@ -34,7 +35,11 @@ import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
 from finn.custom_op.fpgadataflow.elementwise_binary import ElementwiseBinaryOperation
 from finn.custom_op.fpgadataflow.hls import register_custom_op
 from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
-from finn.util.data_packing import numpy_to_hls_code
+from finn.util.data_packing import (
+    npy_to_rtlsim_input,
+    numpy_to_hls_code,
+    rtlsim_output_to_npy,
+)
 
 # Mapping of memory resource attributes to the corresponding C++ HLS
 # pragma directives
@@ -576,7 +581,84 @@ class ElementwiseBinaryOperation_hls(
         return intf_names
 
     def execute_node(self, context, graph):
-        HLSBackend.execute_node(self, context, graph)
+        mode = self.get_nodeattr("exec_mode")
+        if mode == "cppsim":
+            HLSBackend.execute_node(self, context, graph)
+        elif mode == "rtlsim":
+            # rtlsim execution needs to be overwritten here because the HLS code
+            # is dynamically generated which results in different interfaces
+            # Get the node wrapped by this custom op
+            node = self.onnx_node
+            # Input data is stored in numpy files in the code generation dictionary
+            code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
+            # Get the inputs out of the execution context
+            lhs = context[node.input[0]]
+            rhs = context[node.input[1]]
+            # Validate the shape of the inputs
+            assert list(lhs.shape) == self.get_normal_input_shape(
+                ind=0
+            ), f"Input shape mismatch for {node.input[0]}"
+            assert list(rhs.shape) == self.get_normal_input_shape(
+                ind=1
+            ), f"Input shape mismatch for {node.input[1]} {rhs.shape=}"
+            # Reshape the inputs into folded form
+            lhs = lhs.reshape(self.get_folded_input_shape(ind=0))
+            rhs = rhs.reshape(self.get_folded_input_shape(ind=1))
+            # Path to store the intermediate inputs in numpy format
+            lhs_filename = os.path.join(code_gen_dir, "input_0.npy")
+            rhs_filename = os.path.join(code_gen_dir, "input_1.npy")
+            # Save the folded inputs to file to be used by simulation
+            np.save(lhs_filename, lhs)
+            np.save(rhs_filename, rhs)
+            # Start collecting inputs/outputs to the RTL simulation in a dictionary
+            # Note: Prepare one output empty output list
+            io_dict = {"inputs": {}, "outputs": {"out0": []}}
+            # Type and width of the input tensors
+            lhs_dtype = self.get_input_datatype(ind=0)
+            lhs_width = self.get_instream_width(ind=0)
+            rhs_dtype = self.get_input_datatype(ind=1)
+            rhs_width = self.get_instream_width(ind=1)
+
+            # If the left-hand-side is provided as runtime input it needs to be
+            # inserted into the RTL simulation inputs
+            if self.lhs_style == "input":
+                # Convert inputs to RTL simulation format
+                io_dict["inputs"]["in0"] = npy_to_rtlsim_input(lhs_filename, lhs_dtype, lhs_width)
+
+            # If the right-hand-side is provided as runtime input it needs to be
+            # inserted into the RTL simulation inputs
+            if self.rhs_style == "input":
+                # Convert inputs to RTL simulation format
+                io_dict["inputs"]["in1"] = npy_to_rtlsim_input(rhs_filename, rhs_dtype, rhs_width)
+
+            # Setup PyVerilator simulation of the node
+            sim = self.get_rtlsim()
+            # Reset the RTL simulation; finnxsi toggles the clock
+            super().reset_rtlsim(sim)
+            # Run the RTL Simulation
+            self.rtlsim_multi_io(sim, io_dict)
+
+            # Collect the output from RTL simulation
+            out = io_dict["outputs"]["out0"]
+            # Type and sizes of the output tensor
+            dtype = self.get_output_datatype(ind=0)
+            width = self.get_outstream_width(ind=0)
+            shape = self.get_folded_output_shape(ind=0)
+            # Path to store the intermediate numpy file
+            filename = os.path.join(code_gen_dir, "output_0.npy")
+            # Convert from RTL simulation format to numpy format
+            rtlsim_output_to_npy(out, filename, dtype, shape, width, dtype.bitwidth())
+            # Load the generated output numpy file
+            out = np.load(filename)
+            # Reshape the folded output and insert into the execution context
+            context[node.output[0]] = out.reshape(self.get_normal_output_shape(ind=0))
+        else:
+            raise Exception(
+                """Invalid value for attribute exec_mode! Is currently set to: {}
+            has to be set to one of the following value ("cppsim", "rtlsim")""".format(
+                    mode
+                )
+            )
 
 
 # Derive a specialization to implement elementwise addition of two inputs
