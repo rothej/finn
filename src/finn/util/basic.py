@@ -32,8 +32,8 @@ import sys
 import tempfile
 from qonnx.util.basic import roundup_to_integer_multiple
 
-# test boards
-test_board_map = ["Pynq-Z1", "KV260_SOM", "ZCU104", "U250", "AUP-ZU3_8GB"]
+# test boards used for bnn pynq tests
+test_board_map = ["Pynq-Z1", "KV260_SOM", "ZCU104", "U250"]
 
 # mapping from PYNQ board names to FPGA part names
 pynq_part_map = dict()
