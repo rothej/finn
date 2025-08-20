@@ -1793,32 +1793,37 @@ class InferElementwiseBinaryOperation(Transformation):
             # If a custom operation with corresponding name is implemented in
             # the module, this operator is supported for conversion
             if f"Elementwise{node.op_type}" in dir(elementwise_binary):
-                # Transplant this operator into our FINN domain
-                node.domain = "finn.custom_op.fpgadataflow"
-                # Adapt the op-type prefixing it with Elementwise
-                # TODO: Consider dropping the prefix?
-                node.op_type = f"Elementwise{node.op_type}"
-                # Now we can get the CustomOp wrapper instance providing easier
-                # attribute access
-                inst: HWCustomOp = getCustomOp(node)
-                # Set the backend attribute to mark this an operation supported
-                # to be implemented on an FPGA by FINN
-                inst.set_nodeattr("backend", "fpgadataflow")
-                # Need to "lift" potential scalar inputs to rank-1 tensors
-                lift_to_rank1(node.input[0], model)
-                lift_to_rank1(node.input[1], model)
+                in0 = node.input[0]
+                in1 = node.input[1]
+                result = node.output[0]
 
-                # Insert data type attributes from "context" into the CustomOp
-                # node
-                # TODO: Find a way to handle this via data type inference?
-                inst.set_nodeattr("lhs_dtype", str(model.get_tensor_datatype(node.input[0])))
-                inst.set_nodeattr("rhs_dtype", str(model.get_tensor_datatype(node.input[1])))
-                inst.set_nodeattr("out_dtype", str(model.get_tensor_datatype(node.output[0])))
-                # Insert shape attributes from "context" into the CustomOp node
-                # TODO: Find a way to handle this via shape inference?
-                inst.set_nodeattr("lhs_shape", model.get_tensor_shape(node.input[0]))
-                inst.set_nodeattr("rhs_shape", model.get_tensor_shape(node.input[1]))
-                inst.set_nodeattr("out_shape", model.get_tensor_shape(node.output[0]))
+                # Need to "lift" potential scalar inputs to rank-1 tensors
+                lift_to_rank1(in0, model)
+                lift_to_rank1(in1, model)
+
+                in0_shape = model.get_tensor_shape(in0)
+                in1_shape = model.get_tensor_shape(in1)
+                out_shape = model.get_tensor_shape(result)
+
+                idt0 = model.get_tensor_datatype(in0)
+                idt1 = model.get_tensor_datatype(in1)
+                odt0 = model.get_tensor_datatype(result)
+
+                new_node = helper.make_node(
+                    f"Elementwise{node.op_type}",
+                    [in0, in1],
+                    [result],
+                    domain="finn.custom_op.fpgadataflow",
+                    backend="fpgadataflow",
+                    lhs_shape=in0_shape,
+                    rhs_shape=in1_shape,
+                    out_shape=out_shape,
+                    lhs_dtype=str(idt0),
+                    rhs_dtype=str(idt1),
+                    out_dtype=str(odt0)
+                )
+                graph.node.insert(index + 1, new_node)
+                graph.node.remove(node)
 
                 # Consider the graph to be modified, triggering exhaustive
                 # re-application of this transformation
