@@ -172,6 +172,9 @@ def create_elementwise_binary_operation(
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # Exec mode
 @pytest.mark.parametrize("exec_mode", ["cppsim", "rtlsim"])
+@pytest.mark.fpgadataflow
+@pytest.mark.slow
+@pytest.mark.vivado
 def test_elementwise_binary_operation_new(
     op_type, lhs_dtype, rhs_dtype, lhs_shape, rhs_shape, pe, initializers, exec_mode
 ):
