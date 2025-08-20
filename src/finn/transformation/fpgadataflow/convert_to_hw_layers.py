@@ -1772,21 +1772,6 @@ class InferElementwiseBinaryOperation(Transformation):
         # Filter True accepts this node
         return True
 
-    # Filter function to filter out any operation involving any floating-point
-    # tensor
-    @staticmethod
-    def reject_floats(model: ModelWrapper, node: NodeProto):
-        # Check for any input being floating-point
-        if any(model.get_tensor_datatype(x) == "FLOAT32" for x in node.input):
-            # Filter False rejects this node
-            return False
-        # Check for any output being floating-point
-        if any(model.get_tensor_datatype(x) == "FLOAT32" for x in node.output):
-            # Filter False rejects this node
-            return False
-        # Filter True accepts this node
-        return True
-
     # Initializes the transformation method with an optional filter function
     def __init__(self, _filter=None):
         # Initialize the base class Transformation object
