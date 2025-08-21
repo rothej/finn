@@ -33,16 +33,17 @@ from onnx import TensorProto
 from onnx import helper as oh
 from qonnx.core.datatype import DataType
 from qonnx.core.modelwrapper import ModelWrapper
-from qonnx.core.onnx_exec import execute_onnx
 from qonnx.transformation.general import GiveUniqueNodeNames
 from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
 from qonnx.util.basic import gen_finn_dt_tensor, qonnx_make_model
 
+from finn.core.onnx_exec import execute_onnx
 from finn.transformation.fpgadataflow.compile_cppsim import CompileCppSim
 from finn.transformation.fpgadataflow.convert_to_hw_layers import (
     InferElementwiseBinaryOperation,
 )
+from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
 from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
 from finn.transformation.fpgadataflow.minimize_accumulator_width import (
     MinimizeAccumulatorWidth,
@@ -91,55 +92,19 @@ def create_elementwise_binary_operation_onnx(
     # Create a node representing the binary elementwise operation
     node = oh.make_node(
         op_type=onnx_op_type,
-        inputs=["lhs", "rhs"],
+        inputs=["in_x", "in_y"],
         outputs=["out"],
     )
-    lhs = oh.make_tensor_value_info("lhs", TensorProto.FLOAT, lhs_shape)
-    rhs = oh.make_tensor_value_info("rhs", TensorProto.FLOAT, rhs_shape)
+    lhs = oh.make_tensor_value_info("in_x", TensorProto.FLOAT, lhs_shape)
+    rhs = oh.make_tensor_value_info("in_y", TensorProto.FLOAT, rhs_shape)
     out = oh.make_tensor_value_info("out", TensorProto.FLOAT, out_shape)
     # Create a graph connecting the node to the inputs and outputs
     graph = oh.make_graph([node], inputs=[lhs, rhs], outputs=[out], name="elementwise-binary")
     model = ModelWrapper(qonnx_make_model(graph, producer_name="elementwise-binary"))
 
     # Add datatype annotation to the value info of input tensors
-    model.set_tensor_datatype("lhs", DataType[lhs_dtype])
-    model.set_tensor_datatype("rhs", DataType[rhs_dtype])
-    model.set_tensor_datatype("out", DataType[out_dtype])
-
-    return model
-
-
-# Creates a model executing a binary elementwise operation
-def create_elementwise_binary_operation(
-    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
-):
-    # Automatically derive the output shape by broadcasting the inputs
-    out_shape = np.broadcast_shapes(lhs_shape, rhs_shape)
-    # Create a node representing the binary elementwise operation
-    node = oh.make_node(
-        op_type=op_type,
-        domain="finn.custom_op.fpgadataflow",
-        backend="fpgadataflow",
-        inputs=["lhs", "rhs"],
-        outputs=["out"],
-        lhs_dtype=lhs_dtype,
-        rhs_dtype=rhs_dtype,
-        out_dtype=out_dtype,
-        lhs_shape=lhs_shape,
-        rhs_shape=rhs_shape,
-        out_shape=out_shape,
-        PE=pe,
-    )
-    lhs = oh.make_tensor_value_info("lhs", TensorProto.FLOAT, lhs_shape)
-    rhs = oh.make_tensor_value_info("rhs", TensorProto.FLOAT, rhs_shape)
-    out = oh.make_tensor_value_info("out", TensorProto.FLOAT, out_shape)
-    # Create a graph connecting the node to the inputs and outputs
-    graph = oh.make_graph([node], inputs=[lhs, rhs], outputs=[out], name="elementwise-binary")
-    model = ModelWrapper(qonnx_make_model(graph, producer_name="elementwise-binary"))
-
-    # Add datatype annotation to the value info of input tensors
-    model.set_tensor_datatype("lhs", DataType[lhs_dtype])
-    model.set_tensor_datatype("rhs", DataType[rhs_dtype])
+    model.set_tensor_datatype("in_x", DataType[lhs_dtype])
+    model.set_tensor_datatype("in_y", DataType[rhs_dtype])
     model.set_tensor_datatype("out", DataType[out_dtype])
 
     return model
@@ -167,7 +132,7 @@ def create_elementwise_binary_operation(
     ],
 )
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [[], ["lhs"], ["rhs"], ["lhs", "rhs"]])
+@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"], ["in_x", "in_y"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # Exec mode
@@ -175,15 +140,11 @@ def create_elementwise_binary_operation(
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 @pytest.mark.vivado
-def test_elementwise_binary_operation_new(
+def test_elementwise_binary_operation(
     op_type, lhs_dtype, rhs_dtype, lhs_shape, rhs_shape, pe, initializers, exec_mode
 ):
-    if (lhs_dtype == "FLOAT32" and rhs_dtype == "INT8") or (
-        rhs_dtype == "FLOAT32" and lhs_dtype == "INT8"
-    ):
-        pytest.skip("Test")
     if "Bitwise" in op_type and (lhs_dtype == "FLOAT32" or rhs_dtype == "FLOAT32"):
-        pytest.skip("Test")
+        pytest.skip("Float datatypes are not meaningful for bitwise ops, skipping those tests.")
     out_dtype = "FLOAT32"
     # Make dummy model for testing
     model = create_elementwise_binary_operation_onnx(
@@ -191,8 +152,8 @@ def test_elementwise_binary_operation_new(
     )
     # Prepare the execution context
     context = {
-        "lhs": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
-        "rhs": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
+        "in_x": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
+        "in_y": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
     }
 
     # Turn selected inputs into initializers
@@ -237,8 +198,8 @@ def test_elementwise_binary_operation_new(
         model = model.transform(PrepareRTLSim())
 
     # Compute ground-truth output in software
-    lhs = context["lhs"]
-    rhs = context["rhs"]
+    lhs = context["in_x"]
+    rhs = context["in_y"]
     # convert container dtype to ensure execution of e.g., bitwise ops
     if "Bitwise" in op_type:
         lhs = lhs.astype(np.int64) if lhs_dtype.startswith("INT") else lhs
@@ -249,4 +210,99 @@ def test_elementwise_binary_operation_new(
     o_produced = execute_onnx(model, context)["out"]
 
     # Compare the expected to the produced for exact equality
+    assert np.all(o_produced == o_expected)
+
+
+# Operator type to be tested
+@pytest.mark.parametrize(
+    "op_type",
+    ["ElementwiseAdd", "ElementwiseMul"],
+)
+# Data type of the left-hand-side input elements
+@pytest.mark.parametrize("lhs_dtype", ["INT8", "FLOAT32"])
+# Data type of the right-hand-side input elements
+@pytest.mark.parametrize("rhs_dtype", ["INT8", "FLOAT32"])
+# Shape of the left-hand-side input
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
+# Shape of the right-hand-side input
+@pytest.mark.parametrize(
+    "rhs_shape",
+    [
+        [3, 32, 1, 16],
+    ],
+)
+# Which inputs to set as initializers
+@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
+# Number of elements to process in parallel
+@pytest.mark.parametrize("pe", [1, 4])
+@pytest.mark.fpgadataflow
+@pytest.mark.slow
+@pytest.mark.vivado
+def test_elementwise_binary_operation_stitched_ip(
+    op_type, lhs_dtype, rhs_dtype, lhs_shape, rhs_shape, pe, initializers
+):
+    out_dtype = "FLOAT32"
+    # Make dummy model for testing
+    model = create_elementwise_binary_operation_onnx(
+        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
+    )
+    # Prepare the execution context
+    context = {
+        "in_x": gen_finn_dt_tensor(DataType[lhs_dtype], lhs_shape),
+        "in_y": gen_finn_dt_tensor(DataType[rhs_dtype], rhs_shape),
+    }
+
+    # Turn selected inputs into initializers
+    for name in initializers:
+        model.set_initializer(name, context[name])
+
+    # Get the numpy reference implementation for this operation
+    numpy_reference = NUMPY_REFERENCES[op_type]
+
+    # Test running shape and data type inference on the model graph
+    model = model.transform(InferDataTypes())
+    model = model.transform(InferShapes())
+
+    # Specializes all nodes to be implemented as HLS backend
+    model = model.transform(InferElementwiseBinaryOperation())
+
+    assert len(model.graph.node) == 1
+    assert model.graph.node[0].op_type == f"{op_type}"
+
+    # Test running shape and data type inference on the model graph
+    model = model.transform(InferDataTypes())
+    model = model.transform(InferShapes())
+
+    # Specializes all nodes to be implemented as HLS backend
+    model = model.transform(SpecializeLayers("xczu7ev-ffvc1156-2-e"))
+
+    assert len(model.graph.node) == 1
+    assert model.graph.node[0].op_type == f"{op_type}_hls"
+
+    # Try to minimize the bit-widths of all data types involved
+    model = model.transform(MinimizeWeightBitWidth())
+    model = model.transform(MinimizeAccumulatorWidth())
+
+    model = model.transform(GiveUniqueNodeNames())
+    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
+    model = model.transform(HLSSynthIP())
+
+    model = model.transform(
+        CreateStitchedIP(
+            "xczu7ev-ffvc1156-2-e",
+            10,
+            vitis=False,
+        )
+    )
+
+    # Compute ground-truth output in software
+    lhs = context["in_x"]
+    rhs = context["in_y"]
+
+    o_expected = numpy_reference(lhs, rhs)
+
+    # Execute the onnx model to collect the result
+    model.set_metadata_prop("exec_mode", "rtlsim")
+    o_produced = execute_onnx(model, context)["out"]
+
     assert np.all(o_produced == o_expected)
