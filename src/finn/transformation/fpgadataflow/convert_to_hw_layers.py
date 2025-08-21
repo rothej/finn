@@ -46,9 +46,6 @@ from qonnx.util.onnx import nchw_to_nhwc
 # Module containing specializations of elementwise binary operations
 import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
 
-# Base class for all FINN custom ops, here just used for type-hinting
-from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
-
 
 class InferConvInpGen(Transformation):
     """Convert Im2Col layers to ConvolutionInputGenerator layers."""
@@ -1820,7 +1817,7 @@ class InferElementwiseBinaryOperation(Transformation):
                     out_shape=out_shape,
                     lhs_dtype=str(idt0),
                     rhs_dtype=str(idt1),
-                    out_dtype=str(odt0)
+                    out_dtype=str(odt0),
                 )
                 graph.node.insert(index + 1, new_node)
                 graph.node.remove(node)
