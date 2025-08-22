@@ -30,8 +30,11 @@
 import numpy as np
 import qonnx.core.data_layout as DataLayout
 import warnings
-from onnx import TensorProto, helper
+from onnx import NodeProto, TensorProto, helper
 from qonnx.core.datatype import DataType
+
+# QONNX wrapper to ONNX model graphs
+from qonnx.core.modelwrapper import ModelWrapper
 from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.general import SortGraph
@@ -39,6 +42,9 @@ from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
 from qonnx.util.basic import get_by_name
 from qonnx.util.onnx import nchw_to_nhwc
+
+# Module containing specializations of elementwise binary operations
+import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
 
 
 class InferConvInpGen(Transformation):
@@ -1732,3 +1738,101 @@ class InferVectorVectorActivation(Transformation):
             model = model.transform(InferShapes())
             model = model.transform(InferDataTypes())
         return (model, graph_modified)
+
+
+# Lifts scalar to rank-1 tensor
+def lift_to_rank1(name: str, model: ModelWrapper):
+    # Scalars have a shape of lengths zero
+    if len(model.get_tensor_shape(name)) == 0:
+        # Lift shape to rank-1 tensor with single element
+        model.set_tensor_shape(name, [1])
+        # Check whether this tensor has an initializer
+        if (tensor := model.get_initializer(name)) is not None:
+            # Set new initializer tensor of shape [1]
+            model.set_initializer(name, tensor.reshape(1))
+
+
+# Converts supported elementwise binary operations to their FINN custom
+# operation
+class InferElementwiseBinaryOperation(Transformation):
+    # Filter function to filter out the last elementwise Mul operation,
+    # typically corresponding to output de-quantization, which should happen
+    # off-chip
+    @staticmethod
+    def reject_output_dequant(model: ModelWrapper, node: NodeProto):
+        # The operator must be a Mul and have no successor nodes
+        if node.op_type == "Mul" and not model.find_direct_successors(node):
+            # If the output is a floating-point tensors, reject this
+            if model.get_tensor_datatype(node.output[0]) == "FLOAT32":
+                # Filter False rejects this node
+                return False
+        # Filter True accepts this node
+        return True
+
+    # Initializes the transformation method with an optional filter function
+    def __init__(self, _filter=None):
+        # Initialize the base class Transformation object
+        super().__init__()
+        # Register the filter function as attribute
+        self._filter = _filter if _filter is not None else lambda *_: True
+
+    # Applies the transform to a whole model graph
+    def apply(self, model: ModelWrapper):  # noqa
+        # Get the model graph out of the model wrapper object
+        graph = model.graph
+        # Keep track of whether the graph has been modified
+        graph_modified = False
+        # Iterate all nodes in the graph keeping track of the index
+        for index, node in enumerate(graph.node):
+            # Skip transforming nodes rejected by the filter
+            if not self._filter(model, node):
+                continue
+            # If a custom operation with corresponding name is implemented in
+            # the module, this operator is supported for conversion
+            if f"Elementwise{node.op_type}" in dir(elementwise_binary):
+                in0 = node.input[0]
+                in1 = node.input[1]
+                result = node.output[0]
+
+                # Need to "lift" potential scalar inputs to rank-1 tensors
+                lift_to_rank1(in0, model)
+                lift_to_rank1(in1, model)
+
+                in0_shape = model.get_tensor_shape(in0)
+                in1_shape = model.get_tensor_shape(in1)
+                out_shape = model.get_tensor_shape(result)
+
+                idt0 = model.get_tensor_datatype(in0)
+                idt1 = model.get_tensor_datatype(in1)
+                odt0 = model.get_tensor_datatype(result)
+
+                new_node = helper.make_node(
+                    f"Elementwise{node.op_type}",
+                    [in0, in1],
+                    [result],
+                    domain="finn.custom_op.fpgadataflow",
+                    backend="fpgadataflow",
+                    lhs_shape=in0_shape,
+                    rhs_shape=in1_shape,
+                    out_shape=out_shape,
+                    lhs_dtype=str(idt0),
+                    rhs_dtype=str(idt1),
+                    out_dtype=str(odt0),
+                )
+                graph.node.insert(index + 1, new_node)
+                graph.node.remove(node)
+
+                # Consider the graph to be modified, triggering exhaustive
+                # re-application of this transformation
+                graph_modified = True
+                # Exiting here triggers type and shape inference and cleanup
+                # after each transformed node. This helps QONNX to behave
+                # better / more consistent in certain cases...
+                break
+        # Re-do shape and data type annotations after potential changes to the
+        # model graph
+        model = model.transform(InferShapes())
+        model = model.transform(InferDataTypes())
+        # Return the transformed model and indicate whether the graph actually
+        # has been transformed
+        return model, graph_modified
