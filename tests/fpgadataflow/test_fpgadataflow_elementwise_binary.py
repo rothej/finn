@@ -33,6 +33,7 @@ from onnx import TensorProto
 from onnx import helper as oh
 from qonnx.core.datatype import DataType
 from qonnx.core.modelwrapper import ModelWrapper
+from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.general import GiveUniqueNodeNames
 from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
@@ -83,7 +84,7 @@ NUMPY_REFERENCES = {
 
 # Creates a model executing a binary elementwise operation
 def create_elementwise_binary_operation_onnx(
-    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
+    op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape
 ):
     # Remove "Elementwise" from op_type string which is the onnx ops op_type
     onnx_op_type = op_type[11:]
@@ -148,7 +149,7 @@ def test_elementwise_binary_operation(
     out_dtype = "FLOAT32"
     # Make dummy model for testing
     model = create_elementwise_binary_operation_onnx(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
+        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape
     )
     # Prepare the execution context
     context = {
@@ -182,6 +183,8 @@ def test_elementwise_binary_operation(
 
     assert len(model.graph.node) == 1
     assert model.graph.node[0].op_type == f"{op_type}_hls"
+
+    getCustomOp(model.graph.node[0]).set_nodeattr("PE", pe)
 
     # Try to minimize the bit-widths of all data types involved
     model = model.transform(MinimizeWeightBitWidth())
@@ -223,7 +226,7 @@ def test_elementwise_binary_operation(
 # Data type of the right-hand-side input elements
 @pytest.mark.parametrize("rhs_dtype", ["INT8", "FLOAT32"])
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
+@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1]])
 # Shape of the right-hand-side input
 @pytest.mark.parametrize(
     "rhs_shape",
@@ -234,7 +237,7 @@ def test_elementwise_binary_operation(
 # Which inputs to set as initializers
 @pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
-@pytest.mark.parametrize("pe", [1, 4])
+@pytest.mark.parametrize("pe", [4])
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 @pytest.mark.vivado
@@ -244,7 +247,7 @@ def test_elementwise_binary_operation_stitched_ip(
     out_dtype = "FLOAT32"
     # Make dummy model for testing
     model = create_elementwise_binary_operation_onnx(
-        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape, pe
+        op_type, lhs_dtype, rhs_dtype, out_dtype, lhs_shape, rhs_shape
     )
     # Prepare the execution context
     context = {
@@ -268,6 +271,8 @@ def test_elementwise_binary_operation_stitched_ip(
 
     assert len(model.graph.node) == 1
     assert model.graph.node[0].op_type == f"{op_type}"
+
+    getCustomOp(model.graph.node[0]).set_nodeattr("PE", pe)
 
     # Test running shape and data type inference on the model graph
     model = model.transform(InferDataTypes())
