@@ -119,10 +119,10 @@ def create_elementwise_binary_operation_onnx(
         *NUMPY_REFERENCES.keys()
     ],
 )
-# Data type of the left-hand-side input elements
-@pytest.mark.parametrize("lhs_dtype", ["INT8", "FLOAT32"])
-# Data type of the right-hand-side input elements
-@pytest.mark.parametrize("rhs_dtype", ["INT8", "FLOAT32"])
+# Data type of the left-hand-side and right-hand-side input elements
+@pytest.mark.parametrize(
+    "lhs_dtype_rhs_dtype", [("INT8", "INT8"), ("INT8", "FLOAT32"), ("FLOAT32", "FLOAT32")]
+)
 # Shape of the left-hand-side input
 @pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1], [1]])
 # Shape of the right-hand-side input
@@ -142,8 +142,9 @@ def create_elementwise_binary_operation_onnx(
 @pytest.mark.slow
 @pytest.mark.vivado
 def test_elementwise_binary_operation(
-    op_type, lhs_dtype, rhs_dtype, lhs_shape, rhs_shape, pe, initializers, exec_mode
+    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers, exec_mode
 ):
+    lhs_dtype, rhs_dtype = lhs_dtype_rhs_dtype
     if "Bitwise" in op_type and (lhs_dtype == "FLOAT32" or rhs_dtype == "FLOAT32"):
         pytest.skip("Float datatypes are not meaningful for bitwise ops, skipping those tests.")
     out_dtype = "FLOAT32"
@@ -221,10 +222,10 @@ def test_elementwise_binary_operation(
     "op_type",
     ["ElementwiseAdd", "ElementwiseMul"],
 )
-# Data type of the left-hand-side input elements
-@pytest.mark.parametrize("lhs_dtype", ["INT8", "FLOAT32"])
-# Data type of the right-hand-side input elements
-@pytest.mark.parametrize("rhs_dtype", ["INT8", "FLOAT32"])
+# Data type of the left-hand-side and right-hand-side input elements
+@pytest.mark.parametrize(
+    "lhs_dtype_rhs_dtype", [("INT8", "INT8"), ("INT8", "FLOAT32"), ("FLOAT32", "FLOAT32")]
+)
 # Shape of the left-hand-side input
 @pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1]])
 # Shape of the right-hand-side input
@@ -242,8 +243,9 @@ def test_elementwise_binary_operation(
 @pytest.mark.slow
 @pytest.mark.vivado
 def test_elementwise_binary_operation_stitched_ip(
-    op_type, lhs_dtype, rhs_dtype, lhs_shape, rhs_shape, pe, initializers
+    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers
 ):
+    lhs_dtype, rhs_dtype = lhs_dtype_rhs_dtype
     out_dtype = "FLOAT32"
     # Make dummy model for testing
     model = create_elementwise_binary_operation_onnx(
