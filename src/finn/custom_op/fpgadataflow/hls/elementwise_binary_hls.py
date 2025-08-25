@@ -627,7 +627,11 @@ class ElementwiseBinaryOperation_hls(
         cmd = ["file mkdir %s" % source_target]
         # add streamer if needed
         mem_mode = self.get_nodeattr("mem_mode")
-        if mem_mode == "internal_decoupled":
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+
+        # lhs_decoupled XOR rhs_decoupled
+        if lhs_decoupled != rhs_decoupled:
             node_name = self.onnx_node.name
             # create a hierarchy for this layer, with the same port names
             clk_name = self.get_verilog_top_module_intf_names()["clk"][0]
@@ -710,11 +714,9 @@ class ElementwiseBinaryOperation_hls(
                 % (node_name, dout_name, node_name, node_name, dout_name)
             )
             cmd.append("save_bd_design")
-        elif mem_mode == "internal_embedded":
-            # base class impl sufficient for internal_embedded mode
-            return super().code_generation_ipi()
         else:
-            raise Exception("Unrecognized mem_mode for ElementwiseOp")
+            # base class impl sufficient
+            return super().code_generation_ipi()
         return cmd
 
     def execute_node(self, context, graph):
