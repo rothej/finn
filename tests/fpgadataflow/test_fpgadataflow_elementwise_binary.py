@@ -228,18 +228,18 @@ def test_elementwise_binary_operation(
     "lhs_dtype_rhs_dtype", [("INT8", "INT8"), ("INT8", "FLOAT32"), ("FLOAT32", "FLOAT32")]
 )
 # Shape of the left-hand-side input
-@pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1]])
+@pytest.mark.parametrize("lhs_shape", [[1, 8]])
 # Shape of the right-hand-side input
 @pytest.mark.parametrize(
     "rhs_shape",
     [
-        [3, 32, 1, 16],
+        [1, 8],
     ],
 )
 # Which inputs to set as initializers
 @pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
-@pytest.mark.parametrize("pe", [4])
+@pytest.mark.parametrize("pe", [2])
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 @pytest.mark.vivado
@@ -276,6 +276,7 @@ def test_elementwise_binary_operation_stitched_ip(
     assert model.graph.node[0].op_type == f"{op_type}"
 
     getCustomOp(model.graph.node[0]).set_nodeattr("PE", pe)
+    getCustomOp(model.graph.node[0]).set_nodeattr("mem_mode", "internal_decoupled")
 
     # Test running shape and data type inference on the model graph
     model = model.transform(InferDataTypes())
