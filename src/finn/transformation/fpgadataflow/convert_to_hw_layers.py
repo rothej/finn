@@ -1809,7 +1809,7 @@ class InferShuffle(Transformation):
                             "Shuffle",
                             [new_in_tensor],
                             [new_out_tensor],
-                            domain="finnbrainsmith.custom_op.fpgadataflow",
+                            domain="finn.custom_op.fpgadataflow",
                             backend="fpgadataflow",
                             in_shape=in_shape,
                             in_reshaped=in_reshaped,

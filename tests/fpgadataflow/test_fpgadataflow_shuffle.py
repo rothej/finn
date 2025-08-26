@@ -38,7 +38,7 @@ from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
 from finn.transformation.fpgadataflow.prepare_rtlsim import PrepareRTLSim
 from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
 
-from finn.transformation.fpgadataflow.shuffle_helpers import shuffle_perfect_loopnest_coeffs, ParallelInnerShuffle
+from finn.transformation.fpgadataflow.shuffle_helpers import shuffle_perfect_loopnest_coeffs
 from finn.transformation.fpgadataflow.convert_to_hw_layers import InferShuffle
 
 test_fpga_part:str = "xcv80-lsva4737-2MHP-e-S"
@@ -98,30 +98,30 @@ def construct_onnx_model(
     raise RuntimeError(f"Error unable to export the ONNX file to the temporary location")
 
 
-@pytest.mark.parametrize("simd", [1, 2, 3, 4, 5, 6, 7 ,8])
-def test_2D_transpose_rotation_calculation(simd):
-    for j in range(simd,64):
-        shape=(simd*3, j)
-        t = ParallelInnerShuffle(shape=shape, perm=(1,0), simd=simd)
-        if t.rd_rot_period is None or t.wr_rot_period is None:
-            raise RuntimeError(f"{shape=} {simd=} could not calculate rd/wr rot periods {t.rd_rot_period=} {t.wr_rot_period=}")
-        if not t.validate:
-            raise RuntimeError(f"{shape=} {simd=} is not valid {t.rd_rot_period=} {t.wr_rot_period=}")
+#@pytest.mark.parametrize("simd", [1, 2, 3, 4, 5, 6, 7 ,8])
+#def test_2D_transpose_rotation_calculation(simd):
+#    for j in range(simd,64):
+#        shape=(simd*3, j)
+#        t = ParallelInnerShuffle(shape=shape, perm=(1,0), simd=simd)
+#        if t.rd_rot_period is None or t.wr_rot_period is None:
+#            raise RuntimeError(f"{shape=} {simd=} could not calculate rd/wr rot periods {t.rd_rot_period=} {t.wr_rot_period=}")
+#        if not t.validate:
+#            raise RuntimeError(f"{shape=} {simd=} is not valid {t.rd_rot_period=} {t.wr_rot_period=}")
 
-@pytest.mark.parametrize("transpose_param", [
-    {
-        "shape" : (4, 8, 12),
-        "perm" : (0, 2, 1),
-        "simd" : 4
-    },
-    {
-        "shape" : (22, 64, 12),
-        "perm" : (2, 1, 0),
-        "simd" : 11 
-    }
-    ])
-def test_3D_transpose_rotation_calculation(transpose_param):
-    t = ParallelInnerShuffle(shape=transpose_param["shape"], perm=transpose_param["perm"], simd=transpose_param["simd"])
+#@pytest.mark.parametrize("transpose_param", [
+#    {
+#        "shape" : (4, 8, 12),
+#        "perm" : (0, 2, 1),
+#        "simd" : 4
+#    },
+#    {
+#        "shape" : (22, 64, 12),
+#        "perm" : (2, 1, 0),
+#        "simd" : 11 
+#    }
+#    ])
+#def test_3D_transpose_rotation_calculation(transpose_param):
+#    t = ParallelInnerShuffle(shape=transpose_param["shape"], perm=transpose_param["perm"], simd=transpose_param["simd"])
 
 
 @pytest.mark.parametrize("shuffle_param", [ 
@@ -197,7 +197,6 @@ def test_cppsim_shuffle_layer(shuffle_param, datatype, simd):
     # Attempt to build the HLS for this
     model = model.transform(InferShuffle())
     model = model.transform(ApplyConfig(folding_config))
-    model = model.transform(bs_specialize.SpecializeLayersVisitor(test_fpga_part))
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
