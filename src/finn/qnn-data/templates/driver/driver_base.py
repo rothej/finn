@@ -358,12 +358,16 @@ class FINNExampleOverlay(Overlay):
                 iwdma.write(0x00, 1)
             for o in range(self.num_outputs):
                 self.odma[o].write(0x10, self.obuf_packed_device[o].device_address & 0xFFFFFFFF)
-                self.odma[o].write(0x14, (self.obuf_packed_device[o].device_address >> 32) & 0xFFFFFFFF)
+                self.odma[o].write(
+                    0x14, (self.obuf_packed_device[o].device_address >> 32) & 0xFFFFFFFF
+                )
                 self.odma[o].write(0x1C, batch_size)
                 self.odma[o].write(0x00, 1)
             for i in range(self.num_inputs):
                 self.idma[i].write(0x10, self.ibuf_packed_device[i].device_address & 0xFFFFFFFF)
-                self.idma[i].write(0x14, (self.ibuf_packed_device[i].device_address >> 32) & 0xFFFFFFFF)
+                self.idma[i].write(
+                    0x14, (self.ibuf_packed_device[i].device_address >> 32) & 0xFFFFFFFF
+                )
                 self.idma[i].write(0x1C, batch_size)
                 self.idma[i].write(0x00, 1)
         elif self.platform == "alveo":
