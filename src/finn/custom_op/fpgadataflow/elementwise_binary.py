@@ -277,10 +277,8 @@ class ElementwiseBinaryOperation(HWCustomOp):
 
     def calc_wmem(self):
         """Calculates and returns WMEM."""
-        num_elems = self.get_normal_output_shape(ind=1)[-1]
-        # Valid folding requires the PE to divide the number of elements
-        assert num_elems % self.pe == 0, "PE must divide last axis"
-        return num_elems // self.pe
+        folded_shape = self.get_folded_input_shape(ind=1)
+        return np.prod(folded_shape[:-1])
 
     # Widths of the input data stream of the input at index ind
     def get_instream_width(self, ind=0):
@@ -289,6 +287,9 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Parallelism is the number of elements in the last dimension of the
         # folded input
         *_, elems = self.get_folded_input_shape(ind)
+        # apply parallelism if broadcast
+        if self.broadcast_last_axis:
+            elems = elems * self.pe
         # Width of a stream receiving input elements in parallel
         return elems * i_bits
 

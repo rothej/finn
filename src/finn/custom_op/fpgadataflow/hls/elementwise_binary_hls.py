@@ -190,6 +190,8 @@ class ElementwiseBinaryOperation_hls(
                     f"#pragma HLS ARRAY_PARTITION variable=rhs complete dim={len(rhs_shape)}"
                 )
             else:
+                # merge first dimensions together
+                rhs = rhs.reshape(-1, self.pe)
                 # flip PE dimension
                 rhs = np.flip(rhs, axis=-1)
                 rhs_width = self.get_instream_width(1)
