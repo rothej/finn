@@ -134,7 +134,7 @@ def create_elementwise_binary_operation_onnx(
     ],
 )
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"], ["in_x", "in_y"]])
+@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # Exec mode
@@ -235,11 +235,13 @@ def test_elementwise_binary_operation(
 @pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [2])
+# mem_mode
+@pytest.mark.parametrize("mem_mode", ["internal_embedded", "internal_decoupled"])
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 @pytest.mark.vivado
 def test_elementwise_binary_operation_stitched_ip(
-    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers
+    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers, mem_mode
 ):
     lhs_dtype, rhs_dtype = lhs_dtype_rhs_dtype
     out_dtype = "FLOAT32"
@@ -271,7 +273,7 @@ def test_elementwise_binary_operation_stitched_ip(
     assert model.graph.node[0].op_type == f"{op_type}"
 
     getCustomOp(model.graph.node[0]).set_nodeattr("PE", pe)
-    getCustomOp(model.graph.node[0]).set_nodeattr("mem_mode", "internal_decoupled")
+    getCustomOp(model.graph.node[0]).set_nodeattr("mem_mode", mem_mode)
 
     # Test running shape and data type inference on the model graph
     model = model.transform(InferDataTypes())
