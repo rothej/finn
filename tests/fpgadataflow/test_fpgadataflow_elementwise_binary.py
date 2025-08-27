@@ -289,11 +289,27 @@ def test_elementwise_binary_operation_stitched_ip(
     model = model.transform(MinimizeWeightBitWidth())
     model = model.transform(MinimizeAccumulatorWidth())
 
+    model = model.transform(SetExecMode("rtlsim"))
     model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(InsertAndSetFIFODepths("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(HLSSynthIP())
 
+    model = model.transform(PrepareRTLSim())
+
+    # Compute ground-truth output in software
+    lhs = context["in_x"]
+    rhs = context["in_y"]
+
+    o_expected = numpy_reference(lhs, rhs)
+
+    # node-by-node rtlsim
+    o_produced = execute_onnx(model, context)[model.graph.output[0].name]
+    assert np.all(o_produced == o_expected)
+
+    # prepare for stitched ip rtlsim
+    model = model.transform(InsertAndSetFIFODepths("xczu7ev-ffvc1156-2-e", 10))
+    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
+    model = model.transform(HLSSynthIP())
     model = model.transform(
         CreateStitchedIP(
             "xczu7ev-ffvc1156-2-e",
@@ -301,12 +317,6 @@ def test_elementwise_binary_operation_stitched_ip(
             vitis=False,
         )
     )
-
-    # Compute ground-truth output in software
-    lhs = context["in_x"]
-    rhs = context["in_y"]
-
-    o_expected = numpy_reference(lhs, rhs)
 
     # Tensor names might have changed during the test, so assembling an updated context dict
     io_dict = {}
@@ -318,7 +328,7 @@ def test_elementwise_binary_operation_stitched_ip(
             io_dict[model.graph.input[0].name] = rhs
         elif initializers[0] == "in_y":
             io_dict[model.graph.input[0].name] = lhs
-    # Execute the onnx model to collect the result
+    # stitched-ip rtlsim
     model.set_metadata_prop("exec_mode", "rtlsim")
     o_produced = execute_onnx(model, io_dict)[model.graph.output[0].name]
 
