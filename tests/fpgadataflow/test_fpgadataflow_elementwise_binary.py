@@ -134,7 +134,7 @@ def create_elementwise_binary_operation_onnx(
     ],
 )
 # Which inputs to set as initializers
-@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"], ["in_x", "in_y"]])
+@pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
 @pytest.mark.parametrize("pe", [1, 2, 4])
 # Exec mode
@@ -230,21 +230,18 @@ def test_elementwise_binary_operation(
 # Shape of the left-hand-side input
 @pytest.mark.parametrize("lhs_shape", [[3, 1, 7, 1]])
 # Shape of the right-hand-side input
-@pytest.mark.parametrize(
-    "rhs_shape",
-    [
-        [3, 32, 1, 16],
-    ],
-)
+@pytest.mark.parametrize("rhs_shape", [[3, 32, 1, 16]])
 # Which inputs to set as initializers
 @pytest.mark.parametrize("initializers", [[], ["in_x"], ["in_y"]])
 # Number of elements to process in parallel
-@pytest.mark.parametrize("pe", [4])
+@pytest.mark.parametrize("pe", [2])
+# mem_mode
+@pytest.mark.parametrize("mem_mode", ["internal_embedded", "internal_decoupled"])
 @pytest.mark.fpgadataflow
 @pytest.mark.slow
 @pytest.mark.vivado
 def test_elementwise_binary_operation_stitched_ip(
-    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers
+    op_type, lhs_dtype_rhs_dtype, lhs_shape, rhs_shape, pe, initializers, mem_mode
 ):
     lhs_dtype, rhs_dtype = lhs_dtype_rhs_dtype
     out_dtype = "FLOAT32"
@@ -276,6 +273,7 @@ def test_elementwise_binary_operation_stitched_ip(
     assert model.graph.node[0].op_type == f"{op_type}"
 
     getCustomOp(model.graph.node[0]).set_nodeattr("PE", pe)
+    getCustomOp(model.graph.node[0]).set_nodeattr("mem_mode", mem_mode)
 
     # Test running shape and data type inference on the model graph
     model = model.transform(InferDataTypes())
@@ -291,11 +289,27 @@ def test_elementwise_binary_operation_stitched_ip(
     model = model.transform(MinimizeWeightBitWidth())
     model = model.transform(MinimizeAccumulatorWidth())
 
+    model = model.transform(SetExecMode("rtlsim"))
     model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(InsertAndSetFIFODepths("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
     model = model.transform(HLSSynthIP())
 
+    model = model.transform(PrepareRTLSim())
+
+    # Compute ground-truth output in software
+    lhs = context["in_x"]
+    rhs = context["in_y"]
+
+    o_expected = numpy_reference(lhs, rhs)
+
+    # node-by-node rtlsim
+    o_produced = execute_onnx(model, context)[model.graph.output[0].name]
+    assert np.all(o_produced == o_expected)
+
+    # prepare for stitched ip rtlsim
+    model = model.transform(InsertAndSetFIFODepths("xczu7ev-ffvc1156-2-e", 10))
+    model = model.transform(PrepareIP("xczu7ev-ffvc1156-2-e", 10))
+    model = model.transform(HLSSynthIP())
     model = model.transform(
         CreateStitchedIP(
             "xczu7ev-ffvc1156-2-e",
@@ -303,12 +317,6 @@ def test_elementwise_binary_operation_stitched_ip(
             vitis=False,
         )
     )
-
-    # Compute ground-truth output in software
-    lhs = context["in_x"]
-    rhs = context["in_y"]
-
-    o_expected = numpy_reference(lhs, rhs)
 
     # Tensor names might have changed during the test, so assembling an updated context dict
     io_dict = {}
@@ -320,7 +328,7 @@ def test_elementwise_binary_operation_stitched_ip(
             io_dict[model.graph.input[0].name] = rhs
         elif initializers[0] == "in_y":
             io_dict[model.graph.input[0].name] = lhs
-    # Execute the onnx model to collect the result
+    # stitched-ip rtlsim
     model.set_metadata_prop("exec_mode", "rtlsim")
     o_produced = execute_onnx(model, io_dict)[model.graph.output[0].name]
 

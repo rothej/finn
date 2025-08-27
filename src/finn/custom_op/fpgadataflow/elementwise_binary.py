@@ -92,6 +92,15 @@ class ElementwiseBinaryOperation(HWCustomOp):
                 "PE": ("i", False, 1),
                 # FPGA resource type for memories/internal buffers of the operator
                 "ram_style": ("s", False, "auto", {"auto", "block", "distributed", "ultra"}),
+                # memory mode for the const value
+                # internal_embedded -- embedded parameters
+                # internal_decoupled -- streaming parameters with streamer packaged inside IP
+                "mem_mode": (
+                    "s",
+                    False,
+                    "internal_embedded",
+                    {"internal_embedded", "internal_decoupled"},
+                ),
                 # Input and output FIFO depths for multi-I/O nodes
                 #   Note: Need to override here as there might be two inputs
                 "inFIFODepths": ("ints", False, [2, 2]),
@@ -266,6 +275,11 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Folding along the last dimension
         return *num_inputs, num_elems // self.pe, self.pe
 
+    def calc_wmem(self):
+        """Calculates and returns WMEM."""
+        folded_shape = self.get_folded_input_shape(ind=1)
+        return np.prod(folded_shape[:-1])
+
     # Widths of the input data stream of the input at index ind
     def get_instream_width(self, ind=0):
         # Get the number of bits used to represent the input
@@ -273,6 +287,9 @@ class ElementwiseBinaryOperation(HWCustomOp):
         # Parallelism is the number of elements in the last dimension of the
         # folded input
         *_, elems = self.get_folded_input_shape(ind)
+        # apply parallelism if broadcast
+        if self.broadcast_last_axis:
+            elems = elems * self.pe
         # Width of a stream receiving input elements in parallel
         return elems * i_bits
 

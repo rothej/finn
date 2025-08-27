@@ -1792,6 +1792,12 @@ class InferElementwiseBinaryOperation(Transformation):
             if f"Elementwise{node.op_type}" in dir(elementwise_binary):
                 in0 = node.input[0]
                 in1 = node.input[1]
+                # if both inputs are constant, throw an error and
+                # ask user to run FoldConstants transform first
+                assert (
+                    model.get_initializer(in0) is None or model.get_initializer(in1) is None
+                ), """Both inputs are constant,
+                    please run FoldConstants from qonnx.transformation.fold_constants first."""
                 result = node.output[0]
 
                 # Need to "lift" potential scalar inputs to rank-1 tensors

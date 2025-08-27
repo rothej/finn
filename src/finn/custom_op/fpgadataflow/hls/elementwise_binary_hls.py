@@ -30,6 +30,7 @@ import numpy as np
 import os
 import textwrap
 from qonnx.core.modelwrapper import ModelWrapper
+from qonnx.util.basic import roundup_to_integer_multiple
 
 import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
 from finn.custom_op.fpgadataflow.elementwise_binary import ElementwiseBinaryOperation
@@ -38,6 +39,7 @@ from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
 from finn.util.data_packing import (
     npy_to_rtlsim_input,
     numpy_to_hls_code,
+    pack_innermost_dim_as_hex_string,
     rtlsim_output_to_npy,
 )
 
@@ -73,6 +75,13 @@ class ElementwiseBinaryOperation_hls(
         return max([i_bits_max, o_bits_max])
 
     # Note: End of shape and datatype utilities
+
+    def code_generation_ipgen(self, model, fpgapart, clk):
+        """Generates c++ code and tcl script for ip generation."""
+        super().code_generation_ipgen(model, fpgapart, clk)
+        mem_mode = self.get_nodeattr("mem_mode")
+        if mem_mode == "internal_decoupled":
+            self.generate_hdl_memstream(fpgapart)
 
     # Generates list of C++ includes to be placed at the top of the generated
     # code
@@ -126,19 +135,20 @@ class ElementwiseBinaryOperation_hls(
             lhs_shape = (len(out_shape) - len(lhs_shape)) * (1,) + lhs_shape
             # Reshape the input to align with the output shape
             lhs = lhs.reshape(*lhs_shape)
-            # Generate C++ array initialization code
-            # Note: no packing, but with variable name/type declaration
-            lhs_code = numpy_to_hls_code(lhs, self.lhs_dtype, "lhs", False, False)
-            # Add pragma configuring the storage type to use for the parameter
-            # tensors: This is a constant parameter implemented as dual-port ROM
-            self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS BIND_STORAGE variable=lhs type=ROM_2P impl={ram_style}"
-            )
-            # Add pragma to partition the parameter tensor along the last
-            # dimensions, i.e., the PE dimension for parallel access
-            self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS ARRAY_PARTITION variable=lhs complete dim={len(lhs_shape)}"
-            )
+            if self.get_nodeattr("mem_mode") == "internal_embedded":
+                # Generate C++ array initialization code
+                # Note: no packing, but with variable name/type declaration
+                lhs_code = numpy_to_hls_code(lhs, self.lhs_dtype, "lhs", False, False)
+                # Add pragma configuring the storage type to use for the parameter
+                # tensors: This is a constant parameter implemented as dual-port ROM
+                self.code_gen_dict["$PRAGMAS$"].append(
+                    f"#pragma HLS BIND_STORAGE variable=lhs type=ROM_2P impl={ram_style}"
+                )
+                # Add pragma to partition the parameter tensor along the last
+                # dimensions, i.e., the PE dimension for parallel access
+                self.code_gen_dict["$PRAGMAS$"].append(
+                    f"#pragma HLS ARRAY_PARTITION variable=lhs complete dim={len(lhs_shape)}"
+                )
 
         # Check for an initializer providing the right hand side input
         rhs = model.get_initializer(self.onnx_node.input[1])
@@ -165,23 +175,39 @@ class ElementwiseBinaryOperation_hls(
             rhs_shape = (len(out_shape) - len(rhs_shape)) * (1,) + rhs_shape
             # Reshape the input to align with the output shape
             rhs = rhs.reshape(*rhs_shape)
-            # Generate C++ array initialization code
-            # Note: no packing, but with variable name/type declaration
-            rhs_code = numpy_to_hls_code(rhs, self.rhs_dtype, "rhs", False, False)
-            # Add pragma configuring the storage type to use for the parameter
-            # tensors: This is a constant parameter implemented as dual-port ROM
-            self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS BIND_STORAGE variable=rhs type=ROM_2P impl={ram_style}"
-            )
-            # Add pragma to partition the parameter tensor along the last
-            # dimensions, i.e., the PE dimension for parallel access
-            self.code_gen_dict["$PRAGMAS$"].append(
-                f"#pragma HLS ARRAY_PARTITION variable=rhs complete dim={len(rhs_shape)}"
-            )
+            if self.get_nodeattr("mem_mode") == "internal_embedded":
+                # Generate C++ array initialization code
+                # Note: no packing, but with variable name/type declaration
+                rhs_code = numpy_to_hls_code(rhs, self.rhs_dtype, "rhs", False, False)
+                # Add pragma configuring the storage type to use for the parameter
+                # tensors: This is a constant parameter implemented as dual-port ROM
+                self.code_gen_dict["$PRAGMAS$"].append(
+                    f"#pragma HLS BIND_STORAGE variable=rhs type=ROM_2P impl={ram_style}"
+                )
+                # Add pragma to partition the parameter tensor along the last
+                # dimensions, i.e., the PE dimension for parallel access
+                self.code_gen_dict["$PRAGMAS$"].append(
+                    f"#pragma HLS ARRAY_PARTITION variable=rhs complete dim={len(rhs_shape)}"
+                )
+            else:
+                # merge first dimensions together
+                rhs = rhs.reshape(-1, self.pe)
+                # flip PE dimension
+                rhs = np.flip(rhs, axis=-1)
+                rhs_width = self.get_instream_width(1)
+                # pad to nearest 4 bits to get hex strings
+                rhs_width_padded = roundup_to_integer_multiple(rhs_width, 4)
+                rhs_tensor = pack_innermost_dim_as_hex_string(
+                    rhs, self.rhs_dtype, rhs_width_padded, prefix=""
+                )
+                rhs_stream = rhs_tensor.flatten()
+                rhs_stream = rhs_stream.copy()
+                with open(f"{code_gen_dir}/memblock.dat", "w") as f:
+                    for val in rhs_stream:
+                        f.write(val + "\n")
 
         # Open a file to store the thresholds parameters as C++ code
         with open(f"{code_gen_dir}/params.hpp", "w") as file:
-            # Write lines of C++ code separated by newlines to the file
             file.write(
                 "\n".join(
                     [
@@ -230,9 +256,11 @@ class ElementwiseBinaryOperation_hls(
         code_gen_dir = self.get_nodeattr("code_gen_dir_cppsim")
         # Prepare empty stream reading to append optionals
         self.code_gen_dict["$READNPYDATA$"] = []
-        # If the left-hand-side is provided as runtime input, read code needs
-        # to be generated
-        if self.lhs_style == "input":
+        # If the left-hand-side is provided as runtime input or internal decoupled const,
+        # read code needs to be generated
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        if self.lhs_style == "input" or lhs_decoupled:
             # Generate function calls for reading the input files into the input
             # streams
             self.code_gen_dict["$READNPYDATA$"] += [
@@ -242,9 +270,10 @@ class ElementwiseBinaryOperation_hls(
                 f'"{code_gen_dir}/input_0.npy", in0_V, false',
                 ");",
             ]
-        # If the right-hand-side is provided as runtime input, read code needs
-        # to be generated
-        if self.rhs_style == "input":
+        # If the right-hand-side is provided as runtime input or internal decoupled const,
+        # read code needs to be generated
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+        if self.rhs_style == "input" or rhs_decoupled:
             # Generate function calls for reading the input files into the input
             # streams
             self.code_gen_dict["$READNPYDATA$"] += [
@@ -263,17 +292,20 @@ class ElementwiseBinaryOperation_hls(
             # Note: Assumes stream type aliases to be set in defines
             "OutStream out0_V;"
         ]
-        # If the left-hand-side is provided as runtime input, read code needs
-        # to be generated
-        if self.lhs_style == "input":
+        # If the left-hand-side is provided as runtime input or internal decoupled const,
+        # read code needs to be generated
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        if self.lhs_style == "input" or lhs_decoupled:
             # Generate a stream declaration
             self.code_gen_dict["$STREAMDECLARATIONS$"] += [
                 # Note: Assumes stream type aliases to be set in defines
                 "LhsStream in0_V;"
             ]
-        # If the right-hand-side is provided as runtime input, read code needs
-        # to be generated
-        if self.rhs_style == "input":
+        # If the right-hand-side is provided as runtime input or internal decoupled const,
+        # read code needs to be generated
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+        if self.rhs_style == "input" or rhs_decoupled:
             # Generate a stream declaration
             self.code_gen_dict["$STREAMDECLARATIONS$"] += [
                 # Note: Assumes stream type aliases to be set in defines
@@ -321,15 +353,21 @@ class ElementwiseBinaryOperation_hls(
             # buffer slot
             return "".join([f"[i{d}]" if s != 1 else "[0]" for d, s in enumerate(shape)])
 
-        # Generate the C++ code for indexing the buffers
+        # Generate the C++ code for indexing the buffers depending on if the input/parameter
+        # gets streamed in or if it is provided as a constant
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        lhs_key = "stream_in" if self.lhs_style == "input" or lhs_decoupled else "const"
         lhs_index = {
-            "input": make_index_string(lhs_buffer_shape),
+            "stream_in": make_index_string(lhs_buffer_shape),
             "const": make_index_string(lhs_shape),
-        }[self.lhs_style]
+        }[lhs_key]
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+        rhs_key = "stream_in" if self.rhs_style == "input" or rhs_decoupled else "const"
         rhs_index = {
-            "input": make_index_string(rhs_buffer_shape),
+            "stream_in": make_index_string(rhs_buffer_shape),
             "const": make_index_string(rhs_shape),
-        }[self.rhs_style]
+        }[rhs_key]
 
         # Generate C++ code for declaring an array of the buffer shapes
         lhs_buffer_shape = "".join([f"[{size}]" for size in lhs_buffer_shape])
@@ -391,14 +429,14 @@ class ElementwiseBinaryOperation_hls(
             #pragma HLS ARRAY_PARTITION variable=lhs complete dim={ndim}
             #pragma HLS BIND_STORAGE variable=lhs type=RAM_S2P impl={ram_style}
             """
-            if self.lhs_style == "input"
+            if self.lhs_style == "input" or lhs_decoupled
             else """""",
             f"""
             RhsType rhs{rhs_buffer_shape}[{self.pe}];
             #pragma HLS ARRAY_PARTITION variable=rhs complete dim={ndim}
             #pragma HLS BIND_STORAGE variable=rhs type=RAM_S2P impl={ram_style}
             """
-            if self.rhs_style == "input"
+            if self.rhs_style == "input" or rhs_decoupled
             else """""",
             # Buffer to hold the parallel output elements: Implement a simple
             # dual-port RAM for the output buffer, partitioned on the last,
@@ -431,7 +469,7 @@ class ElementwiseBinaryOperation_hls(
                 }}
             }}
             """
-            if self.lhs_style == "input"
+            if self.lhs_style == "input" or lhs_decoupled
             else """""",
             # Read from the right-hand-side input stream if new elements are
             # needed according to broadcasting semantics
@@ -446,7 +484,7 @@ class ElementwiseBinaryOperation_hls(
                 }}
             }}
             """
-            if self.rhs_style == "input"
+            if self.rhs_style == "input" or rhs_decoupled
             else """""",
             # Apply PE parallel elementwise operations by filling the operation
             # template
@@ -508,8 +546,11 @@ class ElementwiseBinaryOperation_hls(
     def blackboxfunction(self):
         # Check whether the inputs are provided at runtime to generate stream
         # inputs to the toplevel interface
-        runtime_lhs = self.lhs_style == "input"
-        runtime_rhs = self.rhs_style == "input"
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+        runtime_lhs = self.lhs_style == "input" or lhs_decoupled
+        runtime_rhs = self.rhs_style == "input" or rhs_decoupled
         # Insert function head describing the top level interface of the
         # attention operator
         self.code_gen_dict["$BLACKBOXFUNCTION$"] = [
@@ -524,6 +565,9 @@ class ElementwiseBinaryOperation_hls(
     # Generates C++ pragmas to be inserted into the main function of the C++
     # simulation and the ipgen-blackboxfunction as well
     def pragmas(self):
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
         # Check whether there are already pragmas in the code generation
         # dictionary
         if "$PRAGMAS$" not in self.code_gen_dict:
@@ -539,7 +583,7 @@ class ElementwiseBinaryOperation_hls(
 
         # If the left-hand-side is provided as runtime input interface pragmas
         # need to be inserted
-        if self.lhs_style == "input":
+        if self.lhs_style == "input" or lhs_decoupled:
             # Connect the lhs input stream with an axi stream interface
             self.code_gen_dict["$PRAGMAS$"] += [
                 "#pragma HLS INTERFACE axis port=in0_V",
@@ -547,7 +591,7 @@ class ElementwiseBinaryOperation_hls(
 
         # If the right-hand-side is provided as runtime input interface pragmas
         # need to be inserted
-        if self.rhs_style == "input":
+        if self.rhs_style == "input" or rhs_decoupled:
             # Connect the rhs input stream with an axi stream interface
             self.code_gen_dict["$PRAGMAS$"] += [
                 "#pragma HLS INTERFACE axis port=in1_V",
@@ -579,6 +623,103 @@ class ElementwiseBinaryOperation_hls(
         intf_names["ap_none"] = []
         # Return the interface name dictionary
         return intf_names
+
+    def code_generation_ipi(self):
+        source_target = "./ip/verilog/rtl_ops/%s" % self.onnx_node.name
+        cmd = ["file mkdir %s" % source_target]
+        # add streamer if needed
+        mem_mode = self.get_nodeattr("mem_mode")
+        lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+        rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
+
+        # lhs_decoupled XOR rhs_decoupled
+        if lhs_decoupled != rhs_decoupled:
+            node_name = self.onnx_node.name
+            # create a hierarchy for this layer, with the same port names
+            clk_name = self.get_verilog_top_module_intf_names()["clk"][0]
+            rst_name = self.get_verilog_top_module_intf_names()["rst"][0]
+            dout_name = self.get_verilog_top_module_intf_names()["m_axis"][0][0]
+            din_name = self.get_verilog_top_module_intf_names()["s_axis"][0][0]
+            cmd.append("create_bd_cell -type hier %s" % node_name)
+            cmd.append("create_bd_pin -dir I -type clk /%s/%s" % (node_name, clk_name))
+            cmd.append("create_bd_pin -dir I -type rst /%s/%s" % (node_name, rst_name))
+            cmd.append(
+                "create_bd_intf_pin -mode Master "
+                "-vlnv xilinx.com:interface:axis_rtl:1.0 /%s/%s" % (node_name, dout_name)
+            )
+            cmd.append(
+                "create_bd_intf_pin -mode Slave "
+                "-vlnv xilinx.com:interface:axis_rtl:1.0 /%s/%s" % (node_name, din_name)
+            )
+            # instantiate the hls ip
+            cmd.append(
+                "create_bd_cell -type ip -vlnv %s /%s/%s"
+                % (self.get_nodeattr("ip_vlnv"), node_name, node_name)
+            )
+            # instantiate a streamer and connect it to the IP
+            code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
+            axi_dir = os.path.join(os.environ["FINN_ROOT"], "finn-rtllib/axi/hdl/")
+            ms_rtllib_dir = os.path.join(os.environ["FINN_ROOT"], "finn-rtllib/memstream/hdl/")
+            file_suffix = "_memstream_wrapper.v"
+            # automatically find memstream verilog component in code generation directory
+            for fname in os.listdir(code_gen_dir):
+                if fname.endswith(file_suffix):
+                    strm_tmpl = fname
+            strm_tmpl_name = strm_tmpl[:-2]
+            sourcefiles = [
+                os.path.join(code_gen_dir, strm_tmpl),
+                axi_dir + "axilite.sv",
+                ms_rtllib_dir + "memstream_axi.sv",
+                ms_rtllib_dir + "memstream.sv",
+            ]
+            for f in sourcefiles:
+                cmd += ["add_files -copy_to %s -norecurse %s" % (source_target, f)]
+            strm_inst = node_name + "_wstrm"
+            cmd.append(
+                "create_bd_cell -type hier -reference %s /%s/%s"
+                % (strm_tmpl_name, node_name, strm_inst)
+            )
+            cmd.append(
+                "connect_bd_intf_net [get_bd_intf_pins %s/%s/m_axis_0] "
+                "[get_bd_intf_pins %s/%s/in1_V]" % (node_name, strm_inst, node_name, node_name)
+            )
+            cmd.append(
+                "connect_bd_net [get_bd_pins %s/%s] [get_bd_pins %s/%s/ap_rst_n]"
+                % (node_name, rst_name, node_name, strm_inst)
+            )
+            cmd.append(
+                "connect_bd_net [get_bd_pins %s/%s] [get_bd_pins %s/%s/ap_clk]"
+                % (node_name, clk_name, node_name, strm_inst)
+            )
+            # 2x clock is not used for decoupled elementwise ops
+            # simply connect input to the 1x clock for now
+            cmd.append(
+                "connect_bd_net [get_bd_pins %s/%s] [get_bd_pins %s/%s/ap_clk2x]"
+                % (node_name, clk_name, node_name, strm_inst)
+            )
+            cmd.append(
+                "connect_bd_net [get_bd_pins %s/%s] [get_bd_pins %s/%s/%s]"
+                % (node_name, rst_name, node_name, node_name, rst_name)
+            )
+            cmd.append(
+                "connect_bd_net [get_bd_pins %s/%s] [get_bd_pins %s/%s/%s]"
+                % (node_name, clk_name, node_name, node_name, clk_name)
+            )
+            cmd.append(
+                "connect_bd_intf_net [get_bd_intf_pins %s/%s] "
+                "[get_bd_intf_pins %s/%s/%s]"
+                % (node_name, din_name, node_name, node_name, din_name)
+            )
+            cmd.append(
+                "connect_bd_intf_net [get_bd_intf_pins %s/%s] "
+                "[get_bd_intf_pins %s/%s/%s]"
+                % (node_name, dout_name, node_name, node_name, dout_name)
+            )
+            cmd.append("save_bd_design")
+        else:
+            # base class impl sufficient
+            return super().code_generation_ipi()
+        return cmd
 
     def execute_node(self, context, graph):
         mode = self.get_nodeattr("exec_mode")
@@ -619,15 +760,18 @@ class ElementwiseBinaryOperation_hls(
             rhs_dtype = self.get_input_datatype(ind=1)
             rhs_width = self.get_instream_width(ind=1)
 
+            mem_mode = self.get_nodeattr("mem_mode")
+            lhs_decoupled = self.lhs_style == "const" and mem_mode == "internal_decoupled"
+            rhs_decoupled = self.rhs_style == "const" and mem_mode == "internal_decoupled"
             # If the left-hand-side is provided as runtime input it needs to be
             # inserted into the RTL simulation inputs
-            if self.lhs_style == "input":
+            if self.lhs_style == "input" or lhs_decoupled:
                 # Convert inputs to RTL simulation format
                 io_dict["inputs"]["in0"] = npy_to_rtlsim_input(lhs_filename, lhs_dtype, lhs_width)
 
             # If the right-hand-side is provided as runtime input it needs to be
             # inserted into the RTL simulation inputs
-            if self.rhs_style == "input":
+            if self.rhs_style == "input" or rhs_decoupled:
                 # Convert inputs to RTL simulation format
                 io_dict["inputs"]["in1"] = npy_to_rtlsim_input(rhs_filename, rhs_dtype, rhs_width)
 
