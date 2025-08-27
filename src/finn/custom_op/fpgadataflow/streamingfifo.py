@@ -92,7 +92,10 @@ class StreamingFIFO(HWCustomOp):
         return ret
 
     def get_normal_input_shape(self, ind=0):
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         assert depth >= 1, """Depth is too low"""
         if depth > 256 and self.get_nodeattr("impl_style") == "rtl":
             warnings.warn("Depth is high, set between 2 and 256 for efficient SRL implementation")
@@ -133,7 +136,10 @@ class StreamingFIFO(HWCustomOp):
         """Calculates resource estimation for BRAM"""
         impl = self.get_nodeattr("impl_style")
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         if impl == "rtl" or (impl == "vivado" and ram_type != "block"):
@@ -158,7 +164,10 @@ class StreamingFIFO(HWCustomOp):
 
         impl = self.get_nodeattr("impl_style")
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         if impl == "rtl" or (impl == "vivado" and ram_type != "ultra"):
@@ -168,7 +177,10 @@ class StreamingFIFO(HWCustomOp):
             return (math.ceil(depth / 4096)) * (math.ceil(W / 72))
 
     def bram_efficiency_estimation(self):
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
         bram16_est = self.bram_estimation()
         if bram16_est == 0:
@@ -181,7 +193,10 @@ class StreamingFIFO(HWCustomOp):
         """Calculates resource estimations for LUTs"""
         impl = self.get_nodeattr("impl_style")
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         address_luts = 2 * math.ceil(math.log(depth, 2))
