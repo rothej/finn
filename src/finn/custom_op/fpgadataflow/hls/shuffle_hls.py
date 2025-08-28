@@ -70,8 +70,8 @@ class Shuffle_hls(Shuffle, HLSBackend):
         self.code_gen_dict["$BLACKBOXFUNCTION$"] = [
             f"""
             void {self.onnx_node.name} (
-                hls::stream<TV> &in0_{self.hls_sname()},
-	        hls::stream<TV> &out_{self.hls_sname()}
+                hls::stream<TV> &in0_V,
+	        hls::stream<TV> &out_V
             )
             """
         ]

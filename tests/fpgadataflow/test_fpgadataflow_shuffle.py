@@ -270,7 +270,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     # Attempt to build the HLS for this
     model = model.transform(InferShuffle())
     model = model.transform(ApplyConfig(folding_config))
-    model = model.transform(bs_specialize.SpecializeLayersVisitor(test_fpga_part))
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
