@@ -155,8 +155,8 @@ class Shuffle_hls(Shuffle, HLSBackend):
         # builder.append_includes("-DDEBUG")
         builder.append_includes("-I$FINN_ROOT/src/finn/qnn-data/cpp")
         builder.append_includes("-I$FINN_ROOT/deps/cnpy/")
+        builder.append_includes("-I$FINN_ROOT/custom_hls")
         builder.append_includes("-I$FINN_ROOT/deps/finn-hlslib")
-        builder.append_includes("-I$FINN_ROOT/deps/finnbrainsmith/hlslib_extensions")
         #builder.append_includes("-I{}/include".format(os.environ["HLS_PATH"]))
         builder.append_includes("-I{}/include".format(os.environ["VITIS_PATH"]))
         builder.append_includes("--std=c++14")
@@ -202,7 +202,7 @@ class Shuffle_hls(Shuffle, HLSBackend):
                 input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(in0_V, out_V);
             }}
 
-            vectorstream2npy<TE, float, SIMD>(out_V,{oshape_str}, "{path}/output.npy");
+            vectorstream2npy<TE, float, SIMD>(out_V,{oshape_str}, "{path}/output_0.npy");
             """
         ]
         self.save_as_npy()
