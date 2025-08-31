@@ -422,7 +422,7 @@ class Thresholding_rtl(Thresholding, RTLBackend):
                 num_channels = pe
             width_padded = roundup_to_integer_multiple(thresholds.shape[1], 2**o_bitwidth)
             thresh_padded = np.zeros((thresholds.shape[0], width_padded))
-            thresh_padded[: thresholds.shape[0], :n_thres_steps] = thresholds
+            thresh_padded[: thresholds.shape[0], :expected_thresholds] = thresholds
             thresh_stream = []
             bw_hexdigit = roundup_to_integer_multiple(wdt.bitwidth(), 32)
             padding = np.zeros(width_padded, dtype=np.int32)
