@@ -50,4 +50,4 @@ custom_op["StreamingFIFO_rtl"] = StreamingFIFO_rtl
 custom_op["MVAU_rtl"] = MVAU_rtl
 custom_op["VVAU_rtl"] = VVAU_rtl
 custom_op["Thresholding_rtl"] = Thresholding_rtl
-custom_op["PTranspose_rtl"] = Ptranspose_rtl
+custom_op["PTranspose_rtl"] = PTranspose_rtl

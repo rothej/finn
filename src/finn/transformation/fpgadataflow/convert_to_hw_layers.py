@@ -1805,25 +1805,38 @@ class InferShuffle(Transformation):
                 """)
 
                 simd = 1
-                new_node = helper.make_node(
-                            "Shuffle",
-                            [new_in_tensor],
-                            [new_out_tensor],
-                            domain="finn.custom_op.fpgadataflow",
-                            backend="fpgadataflow",
-                            in_shape=in_shape,
-                            in_reshaped=in_reshaped,
-                            out_shape=out_shape,
-                            out_reshaped=out_reshaped,
-                            data_type=idt.name,
-                            name=f"Shuffle_{n.name}",
-                            loop_coeffs=shuffle_perfect_loopnest_coeffs(shape=in_reshaped, perm=perm.ints),
-                            inner_moves=innerloop_moves(shape=in_reshaped, perm=list(perm.ints)),
-                            SIMD=simd,
+                if(list(perm.ints) != [1, 0]):
+                    new_node = helper.make_node(
+                                "Shuffle",
+                                [new_in_tensor],
+                                [new_out_tensor],
+                                domain="finn.custom_op.fpgadataflow",
+                                backend="fpgadataflow",
+                                in_shape=in_shape,
+                                in_reshaped=in_reshaped,
+                                out_shape=out_shape,
+                                out_reshaped=out_reshaped,
+                                data_type=idt.name,
+                                name=f"Shuffle_{n.name}",
+                                loop_coeffs=shuffle_perfect_loopnest_coeffs(shape=in_reshaped, perm=perm.ints),
+                                inner_moves=innerloop_moves(shape=in_reshaped, perm=list(perm.ints)),
+                                SIMD=simd,
 
-                            NumChannels=in_reshaped[-1]
-                        )
-                new_node.attribute.extend([perm])
+                                NumChannels=in_reshaped[-1]
+                            )
+                    new_node.attribute.extend([perm])
+                else:
+                    new_node = helper.make_node(
+                                "PTranspose",
+                                [new_in_tensor],
+                                [new_out_tensor],
+                                domain="finn.custom_op.fpgadataflow",
+                                backend="fpgadataflow",
+                                in_shape=in_shape,
+                                data_type=idt.name,
+                                name=f"PTranspose_{n.name}",
+                                SIMD=simd,
+                            )
                 graph.node.insert(node_ind, new_node)
 
                 for i in to_remove:

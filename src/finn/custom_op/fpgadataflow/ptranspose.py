@@ -100,6 +100,6 @@ class PTranspose(HWCustomOp):
         normal_ishape = list(self.get_normal_input_shape())
         simd = self.get_nodeattr("SIMD")
         fold = int(np.prod(normal_ishape) / simd)
-        folded_ishape = [fold , simd)
+        folded_ishape = [fold , simd]
         return tuple(folded_ishape)
 
