@@ -26,7 +26,7 @@ output	[$STREAM_BITS$-1:0] out0_V_TDATA
 );
 
 ptranspose #(
-	.BITS($WIDTH),
+	.BITS($WIDTH$),
 	.I($I$),
 	.J($J$),
 	.SIMD($SIMD$)
