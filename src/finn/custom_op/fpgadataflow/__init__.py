@@ -54,6 +54,7 @@ from finn.custom_op.fpgadataflow.thresholding import Thresholding
 from finn.custom_op.fpgadataflow.upsampler import UpsampleNearestNeighbour
 from finn.custom_op.fpgadataflow.vectorvectoractivation import VVAU
 from finn.custom_op.fpgadataflow.shuffle import Shuffle
+from finn.custom_op.fpgadataflow.ptranspose import PTranspose
 
 custom_op = dict()
 
@@ -81,3 +82,4 @@ custom_op["StreamingDataWidthConverter"] = StreamingDataWidthConverter
 custom_op["StreamingEltwise"] = StreamingEltwise
 custom_op["UpsampleNearestNeighbour"] = UpsampleNearestNeighbour
 custom_op["Shuffle"] = Shuffle
+custom_op["PTranspose"] = PTranspose
