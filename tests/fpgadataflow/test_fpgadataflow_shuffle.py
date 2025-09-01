@@ -232,6 +232,13 @@ def test_cppsim_shuffle_layer(shuffle_param, datatype, simd):
             "out_reshaped" : (1,128,384),
             "perm" : (0,2,1,3)
     }, 
+    {
+            "in_shape" : (128,384), # pTranspose Test 
+            "in_reshaped" : None,
+            "out_shape" : (384,128),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    }, 
 ])
 @pytest.mark.parametrize("datatype", ["INT8"])
 @pytest.mark.parametrize("simd", ["simd2", "simd4"])
@@ -251,11 +258,16 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
             dt=dt
     )
 
+    model.save("input.onnx")
     folding_config = {
         "Defaults": {},
         "Shuffle_Transpose_0": {
             "SIMD": simd,
             "preferred_impl_style": "hls"
+        },
+        "PTranspose_Transpose_0": {
+            "SIMD": simd,
+            "preferred_impl_style": "rtl"
         }
     }
 
@@ -269,6 +281,7 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
 
     # Attempt to build the HLS for this
     model = model.transform(InferShuffle())
+    model.save("post_inference.onnx")
     model = model.transform(ApplyConfig(folding_config))
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(GiveUniqueNodeNames())

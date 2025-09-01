@@ -33,7 +33,7 @@ class PTranspose(HWCustomOp):
         return self.get_nodeattr("in_shape")
 
     def get_normal_output_shape(self, ind=0):
-        ishape = self.get_noraml_input_shape()
+        ishape = self.get_normal_input_shape()
         return (ishape[1], ishape[0])
 
     def get_number_output_values(self): # [STF] Not sure if this is correct
@@ -62,7 +62,7 @@ class PTranspose(HWCustomOp):
 
     def infer_node_datatype(self, model):
         node = self.onnx_node
-        dt = self.get_tensor_datatype(node.input[0])
+        dt = model.get_tensor_datatype(node.input[0])
         if dt != self.get_input_datatype():
             warn_str = f"data_type changing for {node.name}: {str(self.get_input_datatype())} -> {str(dt)}"
             warnings.warn(warn_str)
