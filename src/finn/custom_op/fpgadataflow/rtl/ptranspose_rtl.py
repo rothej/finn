@@ -81,7 +81,7 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         return [
             f"{rtllib_dir}/ptranspose.sv",
             f"{rtllib_dir}/skid.sv",
-            f"{code_gen_dir}{self.get_nodeattr('gen_top_module')}.v"
+            f"{code_gen_dir}{self.get_verilog_top_module_name()}.v"
         ]
 
     def code_generation_ipi(self):
@@ -90,14 +90,14 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         sourcefiles = [
             "ptranspose.sv",
             "skid.sv",
-            f'{self.get_nodeattr("gen_top_module")}.v'
+            f'{self.get_verilog_top_module_name()}.v'
         ]
         sourcefiles = [os.path.join(code_gen_dir, f) for f in sourcefiles]
 
         cmd = []
         for vf in sourcefiles:
             cmd += [f'add_files -norecurse {vf}']
-        cmd += [ f"create_bd_cell -type module -reference {self.get_nodeattr('gen_top_module')} {self.onnx_node.name}" ]
+        cmd += [ f"create_bd_cell -type module -reference {self.get_verilog_top_module_name()} {self.onnx_node.name}" ]
         return cmd
 
     def execute_node(self, context, graph):
