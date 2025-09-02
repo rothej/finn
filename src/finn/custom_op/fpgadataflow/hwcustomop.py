@@ -244,12 +244,11 @@ class HWCustomOp(CustomOp):
         by every node that needs to generate parameters."""
         pass
 
-    @abstractmethod
     def get_number_output_values(self):
         """Function to get the number of expected output values,
         is member function of HWCustomOp class but has to be filled
         by every node."""
-        pass
+        return np.prod(self.get_folded_output_shape()[:-1])
 
     @abstractmethod
     def get_input_datatype(self, ind=0):
@@ -302,7 +301,7 @@ class HWCustomOp(CustomOp):
         """Helper function to generate verilog code for memstream component.
         Currently utilized by MVAU, VVAU and HLS Thresholding layer."""
         ops = ["MVAU_hls", "MVAU_rtl", "VVAU_hls", "VVAU_rtl", "Thresholding_hls"]
-        if self.onnx_node.op_type in ops:
+        if self.onnx_node.op_type in ops or self.onnx_node.op_type.startswith("Elementwise"):
             template_path = (
                 os.environ["FINN_ROOT"] + "/finn-rtllib/memstream/hdl/memstream_wrapper_template.v"
             )

@@ -54,6 +54,8 @@ class MVAU_hls(MVAU, HLSBackend):
         my_attrs = {}
         my_attrs.update(MVAU.get_nodeattr_types(self))
         my_attrs.update(HLSBackend.get_nodeattr_types(self))
+        # for HLS MVAU default resType to lut
+        my_attrs["resType"] = ("s", False, "lut", {"auto", "lut", "dsp"})
         return my_attrs
 
     def lut_estimation(self):

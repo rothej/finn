@@ -26,7 +26,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import math
-import numpy as np
 import warnings
 from qonnx.core.datatype import DataType
 
@@ -86,16 +85,30 @@ class StreamingFIFO(HWCustomOp):
 
     def get_verilog_top_module_intf_names(self):
         ret = super().get_verilog_top_module_intf_names()
-        is_rtl = self.get_nodeattr("impl_style") == "rtl"
+        try:
+            is_rtl = self.get_nodeattr("impl_style") == "rtl"
+        except AttributeError:
+            raise Exception(
+                self.onnx_node.name
+                + """ is still in hw abstraction format,
+                Please run SpecializeLayers() before proceeding."""
+            )
         is_depth_monitor = self.get_nodeattr("depth_monitor") == 1
         if is_rtl and is_depth_monitor:
             ret["ap_none"] = ["maxcount"]
         return ret
 
     def get_normal_input_shape(self, ind=0):
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         assert depth >= 1, """Depth is too low"""
-        if depth > 256 and self.get_nodeattr("impl_style") == "rtl":
+        try:
+            impl_style = self.get_nodeattr("impl_style") == "rtl"
+        except AttributeError:
+            impl_style = ""
+        if depth > 256 and impl_style == "rtl":
             warnings.warn("Depth is high, set between 2 and 256 for efficient SRL implementation")
         return self.get_nodeattr("normal_shape")
 
@@ -130,15 +143,22 @@ class StreamingFIFO(HWCustomOp):
         node = self.onnx_node
         context[node.output[0]] = context[node.input[0]]
 
-    def get_number_output_values(self):
-        folded_oshape = self.get_folded_output_shape()
-        return np.prod(folded_oshape[:-1])
-
     def bram_estimation(self):
         """Calculates resource estimation for BRAM"""
-        impl = self.get_nodeattr("impl_style")
+        try:
+            impl = self.get_nodeattr("impl_style") == "rtl"
+        except AttributeError:
+            raise Exception(
+                self.onnx_node.name
+                + """ is still in hw abstraction format,
+                Please run SpecializeLayers() before proceeding."""
+            )
+
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         if impl == "rtl" or (impl == "vivado" and ram_type != "block"):
@@ -161,9 +181,19 @@ class StreamingFIFO(HWCustomOp):
     def uram_estimation(self):
         """Calculates resource estimation for URAM"""
 
-        impl = self.get_nodeattr("impl_style")
+        try:
+            impl = self.get_nodeattr("impl_style") == "rtl"
+        except AttributeError:
+            raise Exception(
+                self.onnx_node.name
+                + """ is still in hw abstraction format,
+                Please run SpecializeLayers() before proceeding."""
+            )
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         if impl == "rtl" or (impl == "vivado" and ram_type != "ultra"):
@@ -173,7 +203,10 @@ class StreamingFIFO(HWCustomOp):
             return (math.ceil(depth / 4096)) * (math.ceil(W / 72))
 
     def bram_efficiency_estimation(self):
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
         bram16_est = self.bram_estimation()
         if bram16_est == 0:
@@ -184,9 +217,19 @@ class StreamingFIFO(HWCustomOp):
 
     def lut_estimation(self):
         """Calculates resource estimations for LUTs"""
-        impl = self.get_nodeattr("impl_style")
+        try:
+            impl = self.get_nodeattr("impl_style") == "rtl"
+        except AttributeError:
+            raise Exception(
+                self.onnx_node.name
+                + """ is still in hw abstraction format,
+                Please run SpecializeLayers() before proceeding."""
+            )
         ram_type = self.get_nodeattr("ram_style")
-        depth = self.get_adjusted_depth()
+        try:
+            depth = self.get_adjusted_depth()
+        except AttributeError:
+            depth = self.get_nodeattr("depth")
         W = self.get_instream_width()
 
         address_luts = 2 * math.ceil(math.log(depth, 2))

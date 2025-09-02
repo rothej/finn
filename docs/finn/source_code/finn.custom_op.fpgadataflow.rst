@@ -71,14 +71,6 @@ finn.custom\_op.fpgadataflow.convolutioninputgenerator
    :undoc-members:
    :show-inheritance:
 
-finn.custom\_op.fpgadataflow.downsampler
------------------------------------------
-
-.. automodule:: finn.custom_op.fpgadataflow.downsampler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 finn.custom\_op.fpgadataflow.duplicatestreams
 ----------------------------------------------
 

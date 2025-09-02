@@ -11,6 +11,7 @@
 import errno
 import os
 import os.path
+import re
 from finn_xsi.sim_engine import SimEngine
 from typing import Optional
 
@@ -113,16 +114,11 @@ def compile_sim_obj(top_module_name, source_list, sim_out_dir, debug=False):
 def get_simkernel_so():
     vivado_path = os.environ.get("XILINX_VIVADO")
     # xsi kernel lib name depends on Vivado version (renamed in 2024.2)
-    try:
-        if vivado_path:
-            if float(vivado_path.split("/")[-1]) > 2024.1:
-                simkernel_so = "libxv_simulator_kernel.so"
-            else:
-                simkernel_so = "librdi_simulator_kernel.so"
-        else:
-            simkernel_so = "librdi_simulator_kernel.so"
-    except Exception:
-        # fallback/default
+    match = re.search(r"\b(20\d{2})\.(1|2)\b", vivado_path)
+    year, minor = int(match.group(1)), int(match.group(2))
+    if (year, minor) > (2024, 1):
+        simkernel_so = "libxv_simulator_kernel.so"
+    else:
         simkernel_so = "librdi_simulator_kernel.so"
     return simkernel_so
 

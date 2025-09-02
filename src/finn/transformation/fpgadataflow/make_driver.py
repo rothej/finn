@@ -128,7 +128,6 @@ class MakeCPPDriver(Transformation):
         run_command(f"git fetch origin {self.commit_hash} --depth=1", cwd=cpp_driver_dir)
         run_command("git checkout FETCH_HEAD", cwd=cpp_driver_dir)
         run_command("git submodule update --init --recursive", cwd=cpp_driver_dir)
-        run_command("./buildDependencies.sh", cwd=cpp_driver_dir)
 
         # * Writing the header file
         inputDatatype: str = MakeCPPDriver.resolve_dt_name(

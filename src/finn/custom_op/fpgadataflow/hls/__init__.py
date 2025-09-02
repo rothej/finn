@@ -26,16 +26,38 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
+from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
+
+# Dictionary of HLSBackend implementations
+custom_op = dict()
+
+
+# Registers a class into the custom_op dictionary
+# Note: This must be defined first, before importing any custom op
+# implementation to avoid "importing partially initialized module" issues.
+def register_custom_op(cls):
+    # The class must actually implement HWCustomOp
+    assert issubclass(cls, HWCustomOp), f"{cls} must subclass {HWCustomOp}"
+    # The class must also implement the HLSBackend
+    assert issubclass(cls, HLSBackend), f"{cls} must subclass {HLSBackend}"
+    # Insert the class into the custom_op dictionary by its name
+    custom_op[cls.__name__] = cls
+    # Pass through the class unmodified
+    return cls
+
+
+# flake8: noqa
+# Disable linting from here, as all import will be flagged E402 and maybe F401
+
+# Import the submodule containing specializations of ElementwiseBinaryOperation
+# Note: This will automatically register all decorated classes into this domain
+import finn.custom_op.fpgadataflow.hls.elementwise_binary_hls
 from finn.custom_op.fpgadataflow.hls.addstreams_hls import AddStreams_hls
 from finn.custom_op.fpgadataflow.hls.channelwise_op_hls import ChannelwiseOp_hls
 from finn.custom_op.fpgadataflow.hls.checksum_hls import CheckSum_hls
 from finn.custom_op.fpgadataflow.hls.concat_hls import StreamingConcat_hls
-from finn.custom_op.fpgadataflow.hls.convolutioninputgenerator_hls import (
-    ConvolutionInputGenerator_hls,
-)
-from finn.custom_op.fpgadataflow.hls.downsampler_hls import DownSampler_hls
 from finn.custom_op.fpgadataflow.hls.duplicatestreams_hls import DuplicateStreams_hls
-from finn.custom_op.fpgadataflow.hls.fmpadding_hls import FMPadding_hls
 from finn.custom_op.fpgadataflow.hls.fmpadding_pixel_hls import FMPadding_Pixel_hls
 from finn.custom_op.fpgadataflow.hls.globalaccpool_hls import GlobalAccPool_hls
 from finn.custom_op.fpgadataflow.hls.iodma_hls import IODMA_hls
@@ -53,17 +75,12 @@ from finn.custom_op.fpgadataflow.hls.tlastmarker_hls import TLastMarker_hls
 from finn.custom_op.fpgadataflow.hls.upsampler_hls import UpsampleNearestNeighbour_hls
 from finn.custom_op.fpgadataflow.hls.vectorvectoractivation_hls import VVAU_hls
 
-custom_op = dict()
-
 # make sure new HLSCustomOp subclasses are imported here so that they get
 # registered and plug in correctly into the infrastructure
 custom_op["AddStreams_hls"] = AddStreams_hls
 custom_op["ChannelwiseOp_hls"] = ChannelwiseOp_hls
 custom_op["CheckSum_hls"] = CheckSum_hls
-custom_op["ConvolutionInputGenerator_hls"] = ConvolutionInputGenerator_hls
-custom_op["DownSampler_hls"] = DownSampler_hls
 custom_op["DuplicateStreams_hls"] = DuplicateStreams_hls
-custom_op["FMPadding_hls"] = FMPadding_hls
 custom_op["FMPadding_Pixel_hls"] = FMPadding_Pixel_hls
 custom_op["GlobalAccPool_hls"] = GlobalAccPool_hls
 custom_op["IODMA_hls"] = IODMA_hls
