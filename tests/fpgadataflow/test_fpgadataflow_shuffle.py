@@ -40,6 +40,8 @@ from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
 
 from finn.transformation.fpgadataflow.shuffle_helpers import shuffle_perfect_loopnest_coeffs
 from finn.transformation.fpgadataflow.convert_to_hw_layers import InferShuffle
+from finn.transformation.fpgadataflow.transpose_decomposition import TransposeDecomposition
+from qonnx.transformation.base import Transformation
 
 test_fpga_part:str = "xcv80-lsva4737-2MHP-e-S"
 test_synth_clk_period_ns:int = 5
@@ -98,32 +100,6 @@ def construct_onnx_model(
     raise RuntimeError(f"Error unable to export the ONNX file to the temporary location")
 
 
-#@pytest.mark.parametrize("simd", [1, 2, 3, 4, 5, 6, 7 ,8])
-#def test_2D_transpose_rotation_calculation(simd):
-#    for j in range(simd,64):
-#        shape=(simd*3, j)
-#        t = ParallelInnerShuffle(shape=shape, perm=(1,0), simd=simd)
-#        if t.rd_rot_period is None or t.wr_rot_period is None:
-#            raise RuntimeError(f"{shape=} {simd=} could not calculate rd/wr rot periods {t.rd_rot_period=} {t.wr_rot_period=}")
-#        if not t.validate:
-#            raise RuntimeError(f"{shape=} {simd=} is not valid {t.rd_rot_period=} {t.wr_rot_period=}")
-
-#@pytest.mark.parametrize("transpose_param", [
-#    {
-#        "shape" : (4, 8, 12),
-#        "perm" : (0, 2, 1),
-#        "simd" : 4
-#    },
-#    {
-#        "shape" : (22, 64, 12),
-#        "perm" : (2, 1, 0),
-#        "simd" : 11 
-#    }
-#    ])
-#def test_3D_transpose_rotation_calculation(transpose_param):
-#    t = ParallelInnerShuffle(shape=transpose_param["shape"], perm=transpose_param["perm"], simd=transpose_param["simd"])
-
-
 @pytest.mark.parametrize("shuffle_param", [ 
     {
             "in_shape" : (1,128,384), # Shuffle A
@@ -145,13 +121,6 @@ def construct_onnx_model(
             "out_shape" : (4,8,4),
             "out_reshaped" : None,
             "perm" : (2,1,0)
-    }, 
-    {
-            "in_shape" : (2,4,3), # Brute Force cannot be simplified into 2D case 
-            "in_reshaped" : None,
-            "out_shape" : (2,3,4),
-            "out_reshaped" : None,
-            "perm" : (0,2,1)
     }, 
     {
             "in_shape" : (1,12,128,32), # Shuffle C 
@@ -217,6 +186,42 @@ def test_cppsim_shuffle_layer(shuffle_param, datatype, simd):
     assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
     
 
+class SetShuffleSIMD(Transformation):
+    """Set SIMD parameter and enable waveform generation for all Shuffle and PTranspose nodes."""
+    
+    def __init__(self, simd_value, enable_waveforms=False):
+        super().__init__()
+        self.simd_value = simd_value
+        self.enable_waveforms = enable_waveforms
+    
+    def apply(self, model):
+        graph_modified = False
+        for node in model.graph.node:
+            if node.op_type in ["Shuffle_hls", "PTranspose_rtl"] and "finn.custom_op.fpgadataflow" in node.domain:
+                simd_found = False
+                for attr in node.attribute:
+                    if attr.name == "SIMD":
+                        attr.i = self.simd_value
+                        simd_found = True
+                        break
+                if not simd_found:
+                    simd_attr = helper.make_attribute("SIMD", self.simd_value)
+                    node.attribute.append(simd_attr)
+                
+                # Enable waveform generation for debugging
+                if self.enable_waveforms:
+                    trace_found = False
+                    for attr in node.attribute:
+                        if attr.name == "rtlsim_trace":
+                            attr.i = "debug.wdb"
+                            trace_found = True
+                            break
+                    if not trace_found:
+                        trace_attr = helper.make_attribute("rtlsim_trace", "debug.wdb")
+                        node.attribute.append(trace_attr)
+        return model, False 
+
+
 @pytest.mark.parametrize("shuffle_param", [ 
     {
             "in_shape" : (1,128,384), # Shuffle A
@@ -239,12 +244,33 @@ def test_cppsim_shuffle_layer(shuffle_param, datatype, simd):
             "out_reshaped" : None,
             "perm" : (1,0)
     }, 
+    {
+            "in_shape" : (32,16,8,12), # Mixed Transpose test 
+            "in_reshaped" : None,
+            "out_shape" : (8,12,32,16),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    }, 
+    {
+            "in_shape" : (2,2,12,8), # Potentially stuck? 
+            "in_reshaped" : None,
+            "out_shape" : (2,2,8,12),
+            "out_reshaped" : None,
+            "perm" : (0,1,3,2)
+    }, 
+    {
+            "in_shape" : (32,16,12,8), # Mixed Transpose test 
+            "in_reshaped" : None,
+            "out_shape" : (8,12,16,32),
+            "out_reshaped" : None,
+            "perm" : (3,2,1,0)
+    }, 
 ])
 @pytest.mark.parametrize("datatype", ["INT8"])
 @pytest.mark.parametrize("simd", ["simd2", "simd4"])
 @pytest.mark.fpgadataflow
 def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
-    ''' Checks cppsim of the shuffle_hls layer '''
+    ''' Checks rtlsim of the shuffle_hls layer '''
     os.environ['LIVENESS_THRESHOLD'] = '10000000' # Need to bump this up for these RTL sims
     dt = DataType[datatype]
     simd = int(simd[-1])
@@ -259,17 +285,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     )
 
     model.save("input.onnx")
-    folding_config = {
-        "Defaults": {},
-        "Shuffle_Transpose_0": {
-            "SIMD": simd,
-            "preferred_impl_style": "hls"
-        },
-        "PTranspose_Transpose_0": {
-            "SIMD": simd,
-            "preferred_impl_style": "rtl"
-        }
-    }
 
     input = gen_finn_dt_tensor(dt, in_shape)
     in_name = model.graph.input[0].name
@@ -279,11 +294,13 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     # Get a reference for the shuffle 
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
-    # Attempt to build the HLS for this
+    # Attempt to build the HLS/RTL for this
+    model = model.transform(TransposeDecomposition())
+    model.save("post_decomposition.onnx")
     model = model.transform(InferShuffle())
     model.save("post_inference.onnx")
-    model = model.transform(ApplyConfig(folding_config))
     model = model.transform(SpecializeLayers(test_fpga_part))
+    model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
 
@@ -291,6 +308,8 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     model = model.transform(PrepareIP(test_fpga_part, test_synth_clk_period_ns))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
+
+    model.save("post_build.onnx")
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
 

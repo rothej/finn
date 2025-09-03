@@ -1741,6 +1741,19 @@ class InferShuffle(Transformation):
     """
     def __init__(self):
         super().__init__()
+    
+    def _is_streaming_ptranspose(self, perm, shape):
+        """
+        Check if the permutation represents a streaming PTranspose case.
+        A streaming PTranspose works when the last two dimensions are swapped,
+        regardless of how many outer dimensions there are.
+        """
+        if len(perm) < 2 or len(shape) < 2:
+            return False
+            
+        # Check if last two dimensions are swapped while others stay in order
+        expected_perm = list(range(len(perm)-2)) + [len(perm)-1, len(perm)-2]
+        return perm == expected_perm
 
     def apply(self, model):
         graph = model.graph
@@ -1783,6 +1796,14 @@ class InferShuffle(Transformation):
                         out_reshaped = model.get_tensor_shape(new_out_tensor)
                         to_remove.append(consumer)
                         node_ind -= 1
+                
+                # Handle None shapes (shape inference might have failed)
+                if in_reshaped is None:
+                    print(f"Warning: Could not infer shape for tensor {n.input[0]}, skipping node {n.name}")
+                    continue
+                if out_reshaped is None:
+                    print(f"Warning: Could not infer shape for tensor {new_out_tensor}, skipping node {n.name}")
+                    continue
 
                 idt = model.get_tensor_datatype(new_in_tensor)
                 odt = model.get_tensor_datatype(new_out_tensor)
@@ -1805,7 +1826,25 @@ class InferShuffle(Transformation):
                 """)
 
                 simd = 1
-                if(list(perm.ints) != [1, 0]):
+                
+                # Check if this is a streaming PTranspose case (last two dimensions swap)
+                is_streaming_ptranspose = self._is_streaming_ptranspose(perm.ints, in_shape)
+                
+                if is_streaming_ptranspose:
+                    new_node = helper.make_node(
+                                "PTranspose",
+                                [new_in_tensor],
+                                [new_out_tensor],
+                                domain="finn.custom_op.fpgadataflow",
+                                backend="fpgadataflow",
+                                in_shape=in_shape,
+                                data_type=idt.name,
+                                name=f"PTranspose_{n.name}",
+                                SIMD=simd,
+                                I=in_shape[-2],  # Second to last dimension size
+                                J=in_shape[-1],  # Last dimension size
+                            )
+                elif(list(perm.ints) != [1, 0]):
                     new_node = helper.make_node(
                                 "Shuffle",
                                 [new_in_tensor],
@@ -1826,6 +1865,7 @@ class InferShuffle(Transformation):
                             )
                     new_node.attribute.extend([perm])
                 else:
+                    # Original case for simple 2D transpose [1, 0]
                     new_node = helper.make_node(
                                 "PTranspose",
                                 [new_in_tensor],

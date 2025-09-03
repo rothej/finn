@@ -47,8 +47,8 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         simd = self.get_nodeattr("SIMD") 
         code_gen_dict = {
             "TOP_MODULE_NAME" : self.get_verilog_top_module_name(),
-            "I" : self.get_nodeattr("in_shape")[0],
-            "J" : self.get_nodeattr("in_shape")[1],
+            "I" : self.get_nodeattr("in_shape")[-2],
+            "J" : self.get_nodeattr("in_shape")[-1],
             "SIMD" : simd,
             "WIDTH" : dt.bitwidth(),
             "STREAM_BITS" : simd * dt.bitwidth()

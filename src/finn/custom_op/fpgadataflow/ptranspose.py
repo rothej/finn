@@ -33,11 +33,10 @@ class PTranspose(HWCustomOp):
         return self.get_nodeattr("in_shape")
 
     def get_normal_output_shape(self, ind=0):
-        ishape = self.get_normal_input_shape()
-        return (ishape[1], ishape[0])
+        return self.get_normal_input_shape()
 
     def get_number_output_values(self): # [STF] Not sure if this is correct
-        return np.prod(self.get_normal_output_shape())
+        return int(np.prod(self.get_normal_output_shape())/self.get_nodeattr("SIMD"))
 
     def execute_node(self, context, graph):
         node = self.onnx_node
