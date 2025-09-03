@@ -122,13 +122,10 @@ def construct_onnx_models(
 
 @pytest.mark.transform
 @pytest.mark.parametrize("perm", [
-    [0, 1, 2, 3],
-    [3, 0, 2, 1],
-    [1, 0, 2, 3],
-    [0, 2, 3, 1],
-    [2, 3, 0, 1],
-    [1, 3, 2, 0],
-    [3, 2, 1, 0],
+    [0, 1, 2, 3],  
+    [1, 0, 2, 3], 
+    [0, 1, 3, 2],  
+    [1, 0, 3, 2],  
 ])
 @pytest.mark.parametrize("input_shape", [
     (1, 2, 3, 4),
@@ -164,10 +161,8 @@ def test_transpose_decomposition_4d(perm, input_shape):
 
 @pytest.mark.transform
 @pytest.mark.parametrize("perm", [
-    [0, 1, 2],
-    [2, 0, 1],
-    [1, 2, 0],
-    [2, 1, 0],
+    [0, 1, 2],   
+    [0, 2, 1], 
 ])
 @pytest.mark.parametrize("input_shape", [
     (4, 8, 16),

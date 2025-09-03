@@ -33,16 +33,20 @@ class PTranspose(HWCustomOp):
         return self.get_nodeattr("in_shape")
 
     def get_normal_output_shape(self, ind=0):
-        return self.get_normal_input_shape()
+        ishape = tuple(self.get_normal_input_shape())
+        return ishape[:-2] + (ishape[-1], ishape[-2])
 
     def get_number_output_values(self): # [STF] Not sure if this is correct
         return int(np.prod(self.get_normal_output_shape())/self.get_nodeattr("SIMD"))
 
     def execute_node(self, context, graph):
         node = self.onnx_node
-        input_data = context[node.input[0]] #TODO: This should only be applying the transpose to the last two dims, not restricting to only 2 dims
-        assert len(input_data.shape) == 2, "PTranspose HWCustomOp only supports 2D operations" 
-        transposed = np.transpose(input_data)
+        input_data = context[node.input[0]]
+        assert len(input_data.shape) >= 2, "PTranspose HWCustomOp requires at least 2D input"
+        # Transpose only the last two dimensions: (..., a, b) -> (..., b, a)
+        axes = list(range(len(input_data.shape)))
+        axes[-2], axes[-1] = axes[-1], axes[-2]
+        transposed = np.transpose(input_data, axes)
         context[node.output[0]] = transposed
 
     def get_input_datatype(self, ind=0):
