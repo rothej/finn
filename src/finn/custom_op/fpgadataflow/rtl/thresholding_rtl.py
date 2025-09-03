@@ -197,6 +197,12 @@ class Thresholding_rtl(Thresholding, RTLBackend):
         else:
             code_gen_dict["$SIGNED$"] = [str(0)]
 
+        # Is the input datatype floating-point?
+        if self.get_input_datatype(0) == "FLOAT32":
+            code_gen_dict["$FPARG$"] = [str(1)]
+        else:
+            code_gen_dict["$FPARG$"] = [str(0)]
+
         if bias >= 0:
             o_bits = math.ceil(math.log2(n_thres_steps + bias + 1))
         else:

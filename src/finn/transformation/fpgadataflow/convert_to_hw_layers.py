@@ -177,6 +177,21 @@ class InferThresholdingLayer(Transformation):
                 idt = model.get_tensor_datatype(thl_input)
                 tdt = model.get_tensor_datatype(thl_threshold)
 
+                # only infer layers where input and thresholds are
+                # both integers or both fp32
+                idt_int = idt.is_integer()
+                tdt_int = tdt.is_integer()
+                idt_fp32 = idt == "FLOAT32"
+                tdt_fp32 = tdt == "FLOAT32"
+                if idt_int and not tdt_int:
+                    continue
+                if tdt_int and not idt_int:
+                    continue
+                if idt_fp32 and not tdt_fp32:
+                    continue
+                if tdt_fp32 and not idt_fp32:
+                    continue
+
                 # check layout of inputs/outputs, and convert if needed
                 # check layout and convert if necessary
                 thl_in_layout = model.get_tensor_layout(thl_input)
