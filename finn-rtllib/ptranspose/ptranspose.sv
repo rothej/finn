@@ -345,6 +345,7 @@ module ptranspose #(
 		if (rst) osb_vld <= 0;
 		else begin 
 			osb_vld <= !rd_guard;
+			osb_vld_d <= osb_vld;
 			if (osb_rdy && !rd_guard) 
 				for(int unsigned i=0; i<SIMD; i++) 
 					rd_pattern_col_ff[i] <= rd_pat[i];
