@@ -221,9 +221,7 @@ def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
     # Attempt to build the HLS for this
-    model.save("cppsim_input.onnx")
     model = model.transform(TransposeDecomposition())
-    model.save("cppsim_post_decomp.onnx")
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(GiveUniqueNodeNames())
@@ -233,7 +231,6 @@ def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
     model = model.transform(SetCppSimExec())
     model = model.transform(PrepareCppSim())
     model = model.transform(CompileCppSim())
-    model.save("cppsim_built_and_lowered.onnx")
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
 
@@ -484,11 +481,8 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     # Get a reference for the shuffle 
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
-    model.save("input.onnx")
-
     # Attempt to build the HLS/RTL for this
     model = model.transform(TransposeDecomposition())
-    model.save("post_decomposition.onnx")
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
@@ -499,7 +493,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     model = model.transform(PrepareIP(test_fpga_part, test_synth_clk_period_ns))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
-    model.save("post_build.onnx")
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
 
