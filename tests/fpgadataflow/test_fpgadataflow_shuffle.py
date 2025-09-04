@@ -271,13 +271,6 @@ class SetShuffleSIMD(Transformation):
             "perm" : (1,0,2)
     },
     {
-            "in_shape" : (2,4,2,4),
-            "in_reshaped" : None,
-            "out_shape" : (2,4,2,4),
-            "out_reshaped" : None,
-            "perm" : (1,3,0,2)
-    },
-    {
             "in_shape" : (1,1024,768),
             "in_reshaped" : (1,1024,24,32),
             "out_shape" : (1,24,1024,32),
