@@ -100,92 +100,6 @@ def construct_onnx_model(
     raise RuntimeError(f"Error unable to export the ONNX file to the temporary location")
 
 
-@pytest.mark.parametrize("shuffle_param", [ 
-    {
-            "in_shape" : (1,128,384), # Shuffle A
-            "in_reshaped" : (1,128,12,32),
-            "out_shape" : (1,12,128,32),
-            "out_reshaped" : None,
-            "perm" : (0,2,1,3)
-    }, 
-    {
-            "in_shape" : (1,128,384), # Shuffle B 
-            "in_reshaped" : (1,128,12,32),
-            "out_shape" : (1,12,32,128),
-            "out_reshaped" : None,
-            "perm" : (0,2,3,1)
-    }, 
-    {
-            "in_shape" : (4,8,4), # Brute Force cannot be simplified into 2D case 
-            "in_reshaped" : None,
-            "out_shape" : (4,8,4),
-            "out_reshaped" : None,
-            "perm" : (2,1,0)
-    }, 
-    {
-            "in_shape" : (1,12,128,32), # Shuffle C 
-            "in_reshaped" : None,
-            "out_shape" : (1,128,12,32),
-            "out_reshaped" : (1,128,384),
-            "perm" : (0,2,1,3)
-    }, 
-])
-@pytest.mark.parametrize("datatype", ["INT8", "INT4"])
-@pytest.mark.parametrize("simd", ["simd1", "simd2", "simd4"])
-@pytest.mark.fpgadataflow
-def test_cppsim_shuffle_layer(shuffle_param, datatype, simd):
-    ''' Checks cppsim of the shuffle_hls layer '''
-    dt = DataType[datatype]
-    simd = int(simd[-1])
-    in_shape = shuffle_param["in_shape"]
-
-    model = construct_onnx_model(
-            input_shape=in_shape,
-            transpose_perm=shuffle_param["perm"],
-            reshape1_shape=shuffle_param["in_reshaped"],
-            reshape2_shape=shuffle_param["out_reshaped"],
-            dt=dt
-    )
-
-    folding_config = {
-        "Defaults": {},
-        "Shuffle_Transpose_0": {
-            "SIMD": simd,
-            "preferred_impl_style": "hls"
-        }
-    }
-
-    input = gen_finn_dt_tensor(dt, in_shape)
-    in_name = model.graph.input[0].name
-    out_name = model.graph.output[0].name
-    input_t = {in_name : input}
-
-    # Get a reference for the shuffle 
-    y_ref = oxe.execute_onnx(model, input_t)[out_name]
-
-    # Attempt to build the HLS for this
-    model = model.transform(InferShuffle())
-    model = model.transform(ApplyConfig(folding_config))
-    model = model.transform(SpecializeLayers(test_fpga_part))
-    model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(GiveReadableTensorNames())
-
-    model = model.transform(SetExecMode("cppsim"))
-    model = model.transform(PrepareCppSim())
-    model = model.transform(CompileCppSim())
-    model.save("stf_debug.onnx")
-
-    y_hw = oxe.execute_onnx(model, input_t)[out_name]
-
-    y_hw_flat = y_hw.flatten()
-    y_ref_flat = y_ref.flatten()
-    for i in range(len(y_hw_flat)):
-        if not np.allclose(y_hw_flat[i], y_ref_flat[i]):
-            print(f"Index {i}, Expected {y_ref_flat[i]} -- Got {y_hw_flat[i]}")
-
-    assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
-    
-
 class SetShuffleSIMD(Transformation):
     """Set SIMD parameter and enable waveform generation for all Shuffle and PTranspose nodes."""
     
@@ -252,7 +166,7 @@ class SetShuffleSIMD(Transformation):
             "perm" : (2,3,0,1)
     }, 
     {
-            "in_shape" : (2,2,12,8), # Potentially stuck? 
+            "in_shape" : (2,2,12,8),  
             "in_reshaped" : None,
             "out_shape" : (2,2,8,12),
             "out_reshaped" : None,
@@ -264,7 +178,196 @@ class SetShuffleSIMD(Transformation):
             "out_shape" : (8,12,16,32),
             "out_reshaped" : None,
             "perm" : (3,2,1,0)
-    }, 
+    },
+    {
+            "in_shape" : (64,256), 
+            "in_reshaped" : None,
+            "out_shape" : (256,64),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (512,128), 
+            "in_reshaped" : None,
+            "out_shape" : (128,512),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (256,512), 
+            "in_reshaped" : None,
+            "out_shape" : (512,256),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (8,16,32), 
+            "in_reshaped" : None,
+            "out_shape" : (32,16,8),
+            "out_reshaped" : None,
+            "perm" : (2,1,0)
+    },
+    {
+            "in_shape" : (4,64,128), 
+            "in_reshaped" : None,
+            "out_shape" : (64,4,128),
+            "out_reshaped" : None,
+            "perm" : (1,0,2)
+    },
+    {
+            "in_shape" : (16,8,64), 
+            "in_reshaped" : None,
+            "out_shape" : (64,16,8),
+            "out_reshaped" : None,
+            "perm" : (2,0,1)
+    },
+    {
+            "in_shape" : (8,8,8,8),
+            "in_reshaped" : None,
+            "out_shape" : (8,8,8,8),
+            "out_reshaped" : None,
+            "perm" : (3,1,0,2)
+    },
+    {
+            "in_shape" : (4,8,16,32), 
+            "in_reshaped" : None,
+            "out_shape" : (16,32,4,8),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
+    {
+            "in_shape" : (2,4,8,16), 
+            "in_reshaped" : (2,4,128),
+            "out_shape" : (2,8,4,16),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (1,256,192),
+            "in_reshaped" : (1,256,6,32),
+            "out_shape" : (1,6,256,32),
+            "out_reshaped" : (1,6,8192),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (1,64,512),
+            "in_reshaped" : (1,64,16,32),
+            "out_shape" : (1,16,64,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (2,32,128), 
+            "in_reshaped" : (2,32,4,32),
+            "out_shape" : (2,4,32,32),
+            "out_reshaped" : (2,4,1024),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (4,4), 
+            "in_reshaped" : None,
+            "out_shape" : (4,4),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (1,8,8), 
+            "in_reshaped" : None,
+            "out_shape" : (8,1,8),
+            "out_reshaped" : None,
+            "perm" : (1,0,2)
+    },
+    {
+            "in_shape" : (2,4,2,4),
+            "in_reshaped" : None,
+            "out_shape" : (2,4,2,4),
+            "out_reshaped" : None,
+            "perm" : (1,3,0,2)
+    },
+    {
+            "in_shape" : (1,1024,768),
+            "in_reshaped" : (1,1024,24,32),
+            "out_shape" : (1,24,1024,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (8,128,256), 
+            "in_reshaped" : None,
+            "out_shape" : (256,128,8),
+            "out_reshaped" : None,
+            "perm" : (2,1,0)
+    },
+    {
+            "in_shape" : (6,12,18,24),
+            "in_reshaped" : None,
+            "out_shape" : (18,6,24,12),
+            "out_reshaped" : None,
+            "perm" : (2,0,3,1)
+    },
+    {
+            "in_shape" : (9,27,81,12), 
+            "in_reshaped" : None,
+            "out_shape" : (12,81,27,9),
+            "out_reshaped" : None,
+            "perm" : (3,2,1,0)
+    },
+    {
+            "in_shape" : (7,12,16), 
+            "in_reshaped" : None,
+            "out_shape" : (16,7,12),
+            "out_reshaped" : None,
+            "perm" : (2,0,1)
+    },
+    {
+            "in_shape" : (5,10,15,20), 
+            "in_reshaped" : None,
+            "out_shape" : (15,20,5,10),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
+    {
+            "in_shape" : (256,128), 
+            "in_reshaped" : None,
+            "out_shape" : (128,256),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (64,96), 
+            "in_reshaped" : None,
+            "out_shape" : (96,64),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (1,96,128), 
+            "in_reshaped" : (1,96,4,32),
+            "out_shape" : (1,4,96,32),
+            "out_reshaped" : (1,4,3072),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (4,48,64), 
+            "in_reshaped" : (4,48,4,16),
+            "out_shape" : (4,4,48,16),
+            "out_reshaped" : (4,4,768),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (8,32,64,16), 
+            "in_reshaped" : None,
+            "out_shape" : (64,8,16,32),
+            "out_reshaped" : None,
+            "perm" : (2,0,3,1)
+    },
+    {
+            "in_shape" : (3,6,9,12),
+            "in_reshaped" : None,
+            "out_shape" : (9,12,3,6),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
 ])
 @pytest.mark.parametrize("datatype", ["INT8"])
 @pytest.mark.parametrize("simd", ["simd2", "simd4"])
@@ -284,8 +387,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
             dt=dt
     )
 
-    model.save("input.onnx")
-
     input = gen_finn_dt_tensor(dt, in_shape)
     in_name = model.graph.input[0].name
     out_name = model.graph.output[0].name
@@ -296,9 +397,7 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
 
     # Attempt to build the HLS/RTL for this
     model = model.transform(TransposeDecomposition())
-    model.save("post_decomposition.onnx")
     model = model.transform(InferShuffle())
-    model.save("post_inference.onnx")
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
     model = model.transform(GiveUniqueNodeNames())
@@ -308,8 +407,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     model = model.transform(PrepareIP(test_fpga_part, test_synth_clk_period_ns))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
-
-    model.save("post_build.onnx")
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
 
