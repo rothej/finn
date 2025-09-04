@@ -37,6 +37,7 @@ from finn.transformation.fpgadataflow.prepare_ip import PrepareIP
 from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
 from finn.transformation.fpgadataflow.prepare_rtlsim import PrepareRTLSim
 from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
+from finn.transformation.fpgadataflow.synth_ooc import SynthOutOfContext
 
 from finn.transformation.fpgadataflow.shuffle_helpers import shuffle_perfect_loopnest_coeffs
 from finn.transformation.fpgadataflow.convert_to_hw_layers import InferShuffle
@@ -503,5 +504,289 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
             print(f"Index {i}, Expected {y_ref_flat[i]} -- Got {y_hw_flat[i]}")
 
     assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
+
+
+@pytest.mark.parametrize("shuffle_param", [ 
+    {
+            "in_shape" : (1,128,384), # Shuffle A
+            "in_reshaped" : (1,128,12,32),
+            "out_shape" : (1,12,128,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    }, 
+    {
+            "in_shape" : (1,12,128,32), # Shuffle C 
+            "in_reshaped" : None,
+            "out_shape" : (1,128,12,32),
+            "out_reshaped" : (1,128,384),
+            "perm" : (0,2,1,3)
+    }, 
+    {
+            "in_shape" : (128,384), # pTranspose Test 
+            "in_reshaped" : None,
+            "out_shape" : (384,128),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    }, 
+    {
+            "in_shape" : (32,16,8,12), # Mixed Transpose test 
+            "in_reshaped" : None,
+            "out_shape" : (8,12,32,16),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    }, 
+    {
+            "in_shape" : (2,2,12,8),  
+            "in_reshaped" : None,
+            "out_shape" : (2,2,8,12),
+            "out_reshaped" : None,
+            "perm" : (0,1,3,2)
+    }, 
+    {
+            "in_shape" : (32,16,12,8), # Mixed Transpose test 
+            "in_reshaped" : None,
+            "out_shape" : (8,12,16,32),
+            "out_reshaped" : None,
+            "perm" : (3,2,1,0)
+    },
+    {
+            "in_shape" : (64,256), 
+            "in_reshaped" : None,
+            "out_shape" : (256,64),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (512,128), 
+            "in_reshaped" : None,
+            "out_shape" : (128,512),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (256,512), 
+            "in_reshaped" : None,
+            "out_shape" : (512,256),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (8,16,32), 
+            "in_reshaped" : None,
+            "out_shape" : (32,16,8),
+            "out_reshaped" : None,
+            "perm" : (2,1,0)
+    },
+    {
+            "in_shape" : (4,64,128), 
+            "in_reshaped" : None,
+            "out_shape" : (64,4,128),
+            "out_reshaped" : None,
+            "perm" : (1,0,2)
+    },
+    {
+            "in_shape" : (16,8,64), 
+            "in_reshaped" : None,
+            "out_shape" : (64,16,8),
+            "out_reshaped" : None,
+            "perm" : (2,0,1)
+    },
+    {
+            "in_shape" : (8,8,8,8),
+            "in_reshaped" : None,
+            "out_shape" : (8,8,8,8),
+            "out_reshaped" : None,
+            "perm" : (3,1,0,2)
+    },
+    {
+            "in_shape" : (4,8,16,32), 
+            "in_reshaped" : None,
+            "out_shape" : (16,32,4,8),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
+    {
+            "in_shape" : (1,256,192),
+            "in_reshaped" : (1,256,6,32),
+            "out_shape" : (1,6,256,32),
+            "out_reshaped" : (1,6,8192),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (1,64,512),
+            "in_reshaped" : (1,64,16,32),
+            "out_shape" : (1,16,64,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (2,32,128), 
+            "in_reshaped" : (2,32,4,32),
+            "out_shape" : (2,4,32,32),
+            "out_reshaped" : (2,4,1024),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (4,4), 
+            "in_reshaped" : None,
+            "out_shape" : (4,4),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (1,8,8), 
+            "in_reshaped" : None,
+            "out_shape" : (8,1,8),
+            "out_reshaped" : None,
+            "perm" : (1,0,2)
+    },
+    {
+            "in_shape" : (1,1024,768),
+            "in_reshaped" : (1,1024,24,32),
+            "out_shape" : (1,24,1024,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (8,128,256), 
+            "in_reshaped" : None,
+            "out_shape" : (256,128,8),
+            "out_reshaped" : None,
+            "perm" : (2,1,0)
+    },
+    {
+            "in_shape" : (6,12,18,24),
+            "in_reshaped" : None,
+            "out_shape" : (18,6,24,12),
+            "out_reshaped" : None,
+            "perm" : (2,0,3,1)
+    },
+    {
+            "in_shape" : (7,12,16), 
+            "in_reshaped" : None,
+            "out_shape" : (16,7,12),
+            "out_reshaped" : None,
+            "perm" : (2,0,1)
+    },
+    {
+            "in_shape" : (5,10,15,20), 
+            "in_reshaped" : None,
+            "out_shape" : (15,20,5,10),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
+    {
+            "in_shape" : (256,128), 
+            "in_reshaped" : None,
+            "out_shape" : (128,256),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (64,96), 
+            "in_reshaped" : None,
+            "out_shape" : (96,64),
+            "out_reshaped" : None,
+            "perm" : (1,0)
+    },
+    {
+            "in_shape" : (1,96,128), 
+            "in_reshaped" : (1,96,4,32),
+            "out_shape" : (1,4,96,32),
+            "out_reshaped" : (1,4,3072),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (4,48,64), 
+            "in_reshaped" : (4,48,4,16),
+            "out_shape" : (4,4,48,16),
+            "out_reshaped" : (4,4,768),
+            "perm" : (0,2,1,3)
+    },
+    {
+            "in_shape" : (8,32,64,16), 
+            "in_reshaped" : None,
+            "out_shape" : (64,8,16,32),
+            "out_reshaped" : None,
+            "perm" : (2,0,3,1)
+    },
+    {
+            "in_shape" : (3,6,9,12),
+            "in_reshaped" : None,
+            "out_shape" : (9,12,3,6),
+            "out_reshaped" : None,
+            "perm" : (2,3,0,1)
+    },
+])
+@pytest.mark.parametrize("datatype", ["INT8"])
+@pytest.mark.parametrize("simd", ["simd2", "simd4"])
+@pytest.mark.fpgadataflow
+@pytest.mark.vivado
+@pytest.mark.slow
+def test_stitched_ip_shuffle_layer(shuffle_param, datatype, simd):
+    ''' Build stitched IP for shuffle layer tests and save results for buffer analysis '''
+    dt = DataType[datatype]
+    simd = int(simd[-1])
+    in_shape = shuffle_param["in_shape"]
+
+    model = construct_onnx_model(
+            input_shape=in_shape,
+            transpose_perm=shuffle_param["perm"],
+            reshape1_shape=shuffle_param["in_reshaped"],
+            reshape2_shape=shuffle_param["out_reshaped"],
+            dt=dt
+    )
+
+    model = model.transform(TransposeDecomposition())
+    model = model.transform(InferShuffle())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+    model = model.transform(SetShuffleSIMD(simd))
+    model = model.transform(GiveUniqueNodeNames())
+    model = model.transform(GiveReadableTensorNames())
+
+    model = model.transform(PrepareIP(test_fpga_part, test_synth_clk_period_ns))
+    model = model.transform(HLSSynthIP())
+    
+    model = model.transform(CreateStitchedIP(test_fpga_part, test_synth_clk_period_ns))
+    
+    model = model.transform(SynthOutOfContext(test_fpga_part, test_synth_clk_period_ns))
+    
+    results_base_dir = "./shuffle_stitched_ip_analysis"
+    os.makedirs(results_base_dir, exist_ok=True)
+    
+    param_str = f"{datatype}_simd{simd}_{hash(str(shuffle_param['in_shape']) + str(shuffle_param['perm']))}"
+    results_dir = os.path.join(results_base_dir, param_str)
+    os.makedirs(results_dir, exist_ok=True)
+    
+    model.save(os.path.join(results_dir, "stitched_model.onnx"))
+    
+    vivado_stitch_proj_dir = model.get_metadata_prop("vivado_stitch_proj")
+    if vivado_stitch_proj_dir and os.path.isdir(vivado_stitch_proj_dir):
+        import shutil
+        target_proj_dir = os.path.join(results_dir, "vivado_stitch_proj")
+        shutil.copytree(vivado_stitch_proj_dir, target_proj_dir, dirs_exist_ok=True)
+        
+        # Save test parameters and synthesis results for reference
+        import json
+        param_info = {
+            "shuffle_param": shuffle_param,
+            "datatype": datatype,
+            "simd": simd,
+            "vivado_proj_path": target_proj_dir,
+            "original_proj_path": vivado_stitch_proj_dir,
+            "synthesis_results": model.get_metadata_prop("res_total_ooc_synth")
+        }
+        with open(os.path.join(results_dir, "test_params.json"), "w") as f:
+            json.dump(param_info, f, indent=2)
+        
+        print(f"Stitched IP results saved to: {results_dir}")
+        
+        synth_results = model.get_metadata_prop("res_total_ooc_synth")
+        if synth_results:
+            results_dict = eval(synth_results)
+            print(f"Resource usage - LUT: {results_dict.get('LUT', 'N/A')}, FF: {results_dict.get('FF', 'N/A')}, BRAM: {results_dict.get('BRAM', 'N/A')}, DSP: {results_dict.get('DSP', 'N/A')}")
+    
+    assert vivado_stitch_proj_dir is not None, "Stitched IP project was not created"
+    assert os.path.isdir(vivado_stitch_proj_dir), "Stitched IP project directory does not exist"
     
 
