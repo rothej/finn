@@ -45,7 +45,7 @@ from finn.transformation.fpgadataflow.transpose_decomposition import TransposeDe
 from qonnx.transformation.base import Transformation
 
 test_fpga_part:str = "xcv80-lsva4737-2MHP-e-S"
-test_synth_clk_period_ns:int = 5
+test_synth_clk_period_ns:int = 10 
 
 class PytorchShuffle(nn.Module):
     """ From pytorch create a reshape and transpose combination
