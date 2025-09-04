@@ -26,6 +26,33 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
+from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
+
+# Dictionary of HLSBackend implementations
+custom_op = dict()
+
+
+# Registers a class into the custom_op dictionary
+# Note: This must be defined first, before importing any custom op
+# implementation to avoid "importing partially initialized module" issues.
+def register_custom_op(cls):
+    # The class must actually implement HWCustomOp
+    assert issubclass(cls, HWCustomOp), f"{cls} must subclass {HWCustomOp}"
+    # The class must also implement the HLSBackend
+    assert issubclass(cls, HLSBackend), f"{cls} must subclass {HLSBackend}"
+    # Insert the class into the custom_op dictionary by its name
+    custom_op[cls.__name__] = cls
+    # Pass through the class unmodified
+    return cls
+
+
+# flake8: noqa
+# Disable linting from here, as all import will be flagged E402 and maybe F401
+
+# Import the submodule containing specializations of ElementwiseBinaryOperation
+# Note: This will automatically register all decorated classes into this domain
+import finn.custom_op.fpgadataflow.hls.elementwise_binary_hls
 from finn.custom_op.fpgadataflow.hls.addstreams_hls import AddStreams_hls
 from finn.custom_op.fpgadataflow.hls.channelwise_op_hls import ChannelwiseOp_hls
 from finn.custom_op.fpgadataflow.hls.checksum_hls import CheckSum_hls
@@ -48,8 +75,6 @@ from finn.custom_op.fpgadataflow.hls.tlastmarker_hls import TLastMarker_hls
 from finn.custom_op.fpgadataflow.hls.upsampler_hls import UpsampleNearestNeighbour_hls
 from finn.custom_op.fpgadataflow.hls.vectorvectoractivation_hls import VVAU_hls
 from finn.custom_op.fpgadataflow.hls.shuffle_hls import Shuffle_hls
-
-custom_op = dict()
 
 # make sure new HLSCustomOp subclasses are imported here so that they get
 # registered and plug in correctly into the infrastructure

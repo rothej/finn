@@ -97,9 +97,11 @@ class MoveAddPastMul(Transformation):
                     graph.node.remove(n)
                     graph.node.remove(consumer)
                     graph_modified = True
-
+        # Running shape and data type inference is necessary as annotations
+        # might be outdated after moving around tensors
         model = model.transform(InferShapes())
-        return (model, graph_modified)
+        model = model.transform(InferDataTypes())
+        return model, graph_modified
 
 
 class MoveScalarMulPastMatMul(Transformation):
