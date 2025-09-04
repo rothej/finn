@@ -103,7 +103,7 @@ class Shuffle_hls(Shuffle, HLSBackend):
 
             move(in0_V, src0);
 	    input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(src0, dst0);
-	    move(dst0, out_V);
+	    move(dst0, out0_V);
             """
         ]
 
@@ -112,7 +112,7 @@ class Shuffle_hls(Shuffle, HLSBackend):
             f"""
             void {self.onnx_node.name} (
                 hls::stream<TV> &in0_V,
-	        hls::stream<TV> &out_V
+	        hls::stream<TV> &out0_V
             )
             """
         ]
@@ -121,9 +121,9 @@ class Shuffle_hls(Shuffle, HLSBackend):
         self.code_gen_dict["$PRAGMAS$"] = [
             f"""
             #pragma HLS interface AXIS port=in0_V
-            #pragma HLS interface AXIS port=out_V
+            #pragma HLS interface AXIS port=out0_V
 	    #pragma HLS aggregate variable=in0_V compact=bit
-	    #pragma HLS aggregate variable=out_V compact=bit
+	    #pragma HLS aggregate variable=out0_V compact=bit
 
             #pragma HLS interface ap_ctrl_none port=return
             #pragma HLS dataflow disable_start_propagation
@@ -163,15 +163,15 @@ class Shuffle_hls(Shuffle, HLSBackend):
 
             io_dict = {
                 "inputs" : {"in0" : rtlsim_inp},
-                "outputs" : {"out" : []}
+                "outputs" : {"out0" : []}
             }
             self.rtlsim_multi_io(sim, io_dict)
             super().close_rtlsim(sim)
 
-            out = io_dict["outputs"]["out"]
+            out = io_dict["outputs"]["out0"]
             target_bits = export_dt.bitwidth()
             packed_bits = self.get_outstream_width()
-            out_npy_path = f"{code_gen_dir}/output.npy"
+            out_npy_path = f"{code_gen_dir}/output_0.npy"
             out_shape = self.get_folded_output_shape()
             rtlsim_output_to_npy(out, out_npy_path, export_dt, out_shape, packed_bits, target_bits)
 
@@ -234,16 +234,16 @@ class Shuffle_hls(Shuffle, HLSBackend):
         self.code_gen_dict["$DOCOMPUTE$"] = [
             f"""
             static hls::stream<TV>  in0_V;
-            static hls::stream<TV>  out_V;
+            static hls::stream<TV>  out0_V;
 
             npy2vectorstream<TE, float, SIMD>("{path}/input_0.npy", in0_V);
             int stream_size = in0_V.size();
 
-            while(out_V.size() != stream_size) {{
-                input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(in0_V, out_V);
+            while(out0_V.size() != stream_size) {{
+                input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(in0_V, out0_V);
             }}
 
-            vectorstream2npy<TE, float, SIMD>(out_V,{oshape_str}, "{path}/output_0.npy");
+            vectorstream2npy<TE, float, SIMD>(out0_V,{oshape_str}, "{path}/output_0.npy");
             """
         ]
         self.save_as_npy()
