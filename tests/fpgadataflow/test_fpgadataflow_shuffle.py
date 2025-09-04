@@ -135,6 +135,116 @@ class SetShuffleSIMD(Transformation):
                         node.attribute.append(trace_attr)
         return model, False 
 
+class SetCppSimExec(Transformation):
+    """Set Exec mode for only HLS nodes"""
+    
+    def __init__(self):
+        super().__init__()
+    
+    def apply(self, model):
+        graph_modified = False
+        for node in model.graph.node:
+            if node.op_type in ["Shuffle_hls"] and "finn.custom_op.fpgadataflow" in node.domain:
+                exec_mode_found = False
+                for attr in node.attribute:
+                    if attr.name == "exec_mode":
+                        attr.i = "cppsim"
+                        exec_mode_found = True
+                        break
+                if not exec_mode_found:
+                    exec_mode_attr = helper.make_attribute("exec_mode", "cppsim")
+                    node.attribute.append(exec_mode_attr)
+                
+        return model, False 
+
+
+@pytest.mark.parametrize("cpp_shuffle_param", [ 
+    {
+            "in_shape" : (1,128,384), # Shuffle A
+            "in_reshaped" : (1,128,12,32),
+            "out_shape" : (1,12,128,32),
+            "out_reshaped" : None,
+            "perm" : (0,2,1,3)
+    }, 
+    {
+            "in_shape" : (1,128,384), # Shuffle B 
+            "in_reshaped" : (1,128,12,32),
+            "out_shape" : (1,12,32,128),
+            "out_reshaped" : None,
+            "perm" : (0,2,3,1)
+    }, 
+    {
+            "in_shape" : (4,8,4), # Brute Force cannot be simplified into 2D case 
+            "in_reshaped" : None,
+            "out_shape" : (4,8,4),
+            "out_reshaped" : None,
+            "perm" : (2,1,0)
+    }, 
+    {
+            "in_shape" : (2,4,3), # Brute Force cannot be simplified into 2D case 
+            "in_reshaped" : None,
+            "out_shape" : (2,3,4),
+            "out_reshaped" : None,
+            "perm" : (0,2,1)
+    }, 
+    {
+            "in_shape" : (1,12,128,32), # Shuffle C 
+            "in_reshaped" : None,
+            "out_shape" : (1,128,12,32),
+            "out_reshaped" : (1,128,384),
+            "perm" : (0,2,1,3)
+    }, 
+])
+@pytest.mark.parametrize("datatype", ["INT8", "INT4"])
+@pytest.mark.parametrize("simd", ["simd1", "simd2", "simd4"])
+@pytest.mark.fpgadataflow
+def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
+    ''' Checks cppsim of the shuffle_hls layer '''
+    dt = DataType[datatype]
+    simd = int(simd[-1])
+    in_shape = cpp_shuffle_param["in_shape"]
+
+    model = construct_onnx_model(
+            input_shape=in_shape,
+            transpose_perm=cpp_shuffle_param["perm"],
+            reshape1_shape=cpp_shuffle_param["in_reshaped"],
+            reshape2_shape=cpp_shuffle_param["out_reshaped"],
+            dt=dt
+    )
+
+    input = gen_finn_dt_tensor(dt, in_shape)
+    in_name = model.graph.input[0].name
+    out_name = model.graph.output[0].name
+    input_t = {in_name : input}
+
+    # Get a reference for the shuffle 
+    y_ref = oxe.execute_onnx(model, input_t)[out_name]
+
+    # Attempt to build the HLS for this
+    model.save("cppsim_input.onnx")
+    model = model.transform(TransposeDecomposition())
+    model.save("cppsim_post_decomp.onnx")
+    model = model.transform(InferShuffle())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+    model = model.transform(GiveUniqueNodeNames())
+    model = model.transform(GiveReadableTensorNames())
+
+    model = model.transform(SetShuffleSIMD(simd))
+    model = model.transform(SetCppSimExec())
+    model = model.transform(PrepareCppSim())
+    model = model.transform(CompileCppSim())
+    model.save("cppsim_built_and_lowered.onnx")
+
+    y_hw = oxe.execute_onnx(model, input_t)[out_name]
+
+    y_hw_flat = y_hw.flatten()
+    y_ref_flat = y_ref.flatten()
+    for i in range(len(y_hw_flat)):
+        if not np.allclose(y_hw_flat[i], y_ref_flat[i]):
+            print(f"Index {i}, Expected {y_ref_flat[i]} -- Got {y_hw_flat[i]}")
+
+    assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
+
 
 @pytest.mark.parametrize("shuffle_param", [ 
     {

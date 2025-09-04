@@ -145,3 +145,5 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         mode = self.get_nodeattr("exec_mode")
         if mode == "rtlsim" : 
             RTLBackend.execute_node(self, context, graph)
+        else:
+            PTranspose.execute_node(self,context,graph)
