@@ -113,6 +113,13 @@ module ptranspose #(
 ); 
 
 
+	// assertion checks for ensuring that the constraints are satisfied
+	initial begin
+		if (I%SIMD != 0) begin
+			$fatal(1, "Error! Assertion I%SIMD == 0 is not met for this circuit");
+		end
+	end
+
 	function int unsigned gcd(input int a, input int b);  
 		return (b == 0) ? a : gcd(b, a%b);
 	endfunction  

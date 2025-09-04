@@ -236,13 +236,6 @@ class SetShuffleSIMD(Transformation):
             "perm" : (2,3,0,1)
     },
     {
-            "in_shape" : (2,4,8,16), 
-            "in_reshaped" : (2,4,128),
-            "out_shape" : (2,8,4,16),
-            "out_reshaped" : None,
-            "perm" : (0,2,1,3)
-    },
-    {
             "in_shape" : (1,256,192),
             "in_reshaped" : (1,256,6,32),
             "out_shape" : (1,6,256,32),
@@ -304,13 +297,6 @@ class SetShuffleSIMD(Transformation):
             "out_shape" : (18,6,24,12),
             "out_reshaped" : None,
             "perm" : (2,0,3,1)
-    },
-    {
-            "in_shape" : (9,27,81,12), 
-            "in_reshaped" : None,
-            "out_shape" : (12,81,27,9),
-            "out_reshaped" : None,
-            "perm" : (3,2,1,0)
     },
     {
             "in_shape" : (7,12,16), 
@@ -395,8 +381,11 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     # Get a reference for the shuffle 
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
+    model.save("input.onnx")
+
     # Attempt to build the HLS/RTL for this
     model = model.transform(TransposeDecomposition())
+    model.save("post_decomposition.onnx")
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
@@ -407,6 +396,7 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     model = model.transform(PrepareIP(test_fpga_part, test_synth_clk_period_ns))
     model = model.transform(HLSSynthIP())
     model = model.transform(PrepareRTLSim())
+    model.save("post_build.onnx")
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
 

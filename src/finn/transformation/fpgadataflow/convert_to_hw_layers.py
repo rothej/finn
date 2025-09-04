@@ -1844,7 +1844,7 @@ class InferShuffle(Transformation):
                                 I=in_shape[-2],  # Second to last dimension size
                                 J=in_shape[-1],  # Last dimension size
                             )
-                elif(list(perm.ints) != [1, 0]):
+                elif(perm.ints[-1] == (len(perm.ints) - 1)):
                     new_node = helper.make_node(
                                 "Shuffle",
                                 [new_in_tensor],
@@ -1865,18 +1865,7 @@ class InferShuffle(Transformation):
                             )
                     new_node.attribute.extend([perm])
                 else:
-                    # Original case for simple 2D transpose [1, 0]
-                    new_node = helper.make_node(
-                                "PTranspose",
-                                [new_in_tensor],
-                                [new_out_tensor],
-                                domain="finn.custom_op.fpgadataflow",
-                                backend="fpgadataflow",
-                                in_shape=in_shape,
-                                data_type=idt.name,
-                                name=f"PTranspose_{n.name}",
-                                SIMD=simd,
-                            )
+                    raise RuntimeError(f"Transpose with permutation {perm.ints} cannot be mapped into hardware, had the TransposeDecomposition transformation been called?")
                 graph.node.insert(node_ind, new_node)
 
                 for i in to_remove:

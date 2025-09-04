@@ -9,6 +9,8 @@
 
 import numpy as np
 import os
+import math
+from typing import Optional
 
 from finn.custom_op.fpgadataflow import templates
 from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
@@ -16,9 +18,48 @@ from finn.custom_op.fpgadataflow.shuffle import Shuffle
 from finn.util.data_packing import npy_to_rtlsim_input, rtlsim_output_to_npy
 from finn.util.basic import CppBuilder
 
+def auto_size_simd(I: int, SIMD: int) -> Optional[int]:
+    """
+    Return the smallest divisor d of I such that d > SIMD.
+    If no such divisor exists, return None.
+    """
+    if I <= 0:
+        raise ValueError("I must be a positive integer")
+    if SIMD < 0:
+        raise ValueError("SIMD must be a non-negative integer")
+
+    candidates = []
+    limit = int(math.isqrt(I))
+    for a in range(1, limit + 1):
+        if I % a == 0:
+            b = I // a
+            if a > SIMD:
+                candidates.append(a)
+            if b > SIMD:
+                candidates.append(b)
+
+    if not candidates:
+        return None
+
+    return min(candidates)
+
 class Shuffle_hls(Shuffle, HLSBackend):
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
+
+        # check some constraints that it is a legal shuffle_hls 
+        last_dim = self.get_nodeattr("in_shape")[-1]
+        SIMD = self.get_nodeattr("SIMD")
+        if (last_dim%SIMD != 0):
+            #raise RuntimeError(f"Error! Trying to instantiate a shuffle_hls node where (in_dims[-1]%SIMD != 0)\t\t{last_dim}%{SIMD}")
+            # Not sure if this is the correct approach
+            # we could autosize SIMD to the next biggest value that works.
+            # rather than raising an error straight away
+            new_simd = auto_size_simd(last_dim, SIMD)
+            if new_simd is not None:
+                self.set_nodeattr("SIMD", new_simd)
+            else:
+                raise RuntimeError("Unable to determine a new SIMD value for this transpose.")
 
     def get_nodeattr_types(self):
         return Shuffle.get_nodeattr_types(self) | HLSBackend.get_nodeattr_types(self)
