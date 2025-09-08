@@ -6,32 +6,31 @@
 #
 # @author       Shane T. Fleming <shane.fleming@amd.com>
 ############################################################################
+import math
 import os
 import shutil
-import numpy as np
-import warnings
-import math
-from typing import Optional
-from onnx.helper import make_node
 from qonnx.core.datatype import DataType
+from typing import Optional
+
 from finn.custom_op.fpgadataflow.ptranspose import PTranspose
 from finn.custom_op.fpgadataflow.rtlbackend import RTLBackend
 
-def auto_size_simd(I: int, SIMD: int) -> Optional[int]:
+
+def auto_size_simd(I_dim: int, SIMD: int) -> Optional[int]:
     """
-    Return the smallest divisor d of I such that d > SIMD.
-    If no such divisor exists, return None.
+    Return the smallest divisor d of I_dim such that d > SIMD.
+    if no such divisor exists, return None.
     """
-    if I <= 0:
-        raise ValueError("I must be a positive integer")
+    if I_dim <= 0:
+        raise ValueError("I_dim must be a positive integer")
     if SIMD < 0:
         raise ValueError("SIMD must be a non-negative integer")
 
     candidates = []
-    limit = int(math.isqrt(I))
+    limit = int(math.isqrt(I_dim))
     for a in range(1, limit + 1):
-        if I % a == 0:
-            b = I // a
+        if I_dim % a == 0:
+            b = I_dim // a
             if a > SIMD:
                 candidates.append(a)
             if b > SIMD:
@@ -44,20 +43,19 @@ def auto_size_simd(I: int, SIMD: int) -> Optional[int]:
 
 
 class PTranspose_rtl(PTranspose, RTLBackend):
-    """ CustomOp wrapper for the finn-rtllib ptranspose component. """
+    """CustomOp wrapper for the finn-rtllib ptranspose component."""
 
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
         # check some constraints that it is a legal PTranspose
-        I = self.get_nodeattr("in_shape")[-2]
+        I_dim = self.get_nodeattr("in_shape")[-2]
         SIMD = self.get_nodeattr("SIMD")
-        if (I%SIMD != 0):
-            #raise RuntimeError(f"Error! Trying to instantiate a ptranspose node where (I%SIMD != 0)\t\t{I}%{SIMD}")
+        if I_dim % SIMD != 0:
             # Not sure if this is the correct approach
             # we could autosize SIMD to the next biggest value that works.
             # rather than raising an error straight away
-            new_simd = auto_size_simd(I, SIMD)
+            new_simd = auto_size_simd(I_dim, SIMD)
             if new_simd is not None:
                 self.set_nodeattr("SIMD", new_simd)
             else:
@@ -71,12 +69,12 @@ class PTranspose_rtl(PTranspose, RTLBackend):
 
     def get_template_values(self, idims, simd, dt):
         code_gen_dict = {
-            "TOP_MODULE_NAME" : self.get_verilog_top_module_name(),
-            "I" : idims[0],
-            "J" : idims[1],
-            "SIMD" : simd,
-            "WIDTH" : dt.bitwidth(),
-            "STREAM_BITS" : simd * dt.bitwidth()
+            "TOP_MODULE_NAME": self.get_verilog_top_module_name(),
+            "I": idims[0],
+            "J": idims[1],
+            "SIMD": simd,
+            "WIDTH": dt.bitwidth(),
+            "STREAM_BITS": simd * dt.bitwidth(),
         }
         return code_gen_dict
 
@@ -84,15 +82,15 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         rtlsrc = f'{os.environ["FINN_ROOT"]}/finn-rtllib/ptranspose'
         template_path = f"{rtlsrc}/ptranspose_template.v"
         code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
-        dt = DataType[self.get_nodeattr("data_type")] 
-        simd = self.get_nodeattr("SIMD") 
+        dt = DataType[self.get_nodeattr("data_type")]
+        simd = self.get_nodeattr("SIMD")
         code_gen_dict = {
-            "TOP_MODULE_NAME" : self.get_verilog_top_module_name(),
-            "I" : self.get_nodeattr("in_shape")[-2],
-            "J" : self.get_nodeattr("in_shape")[-1],
-            "SIMD" : simd,
-            "WIDTH" : dt.bitwidth(),
-            "STREAM_BITS" : simd * dt.bitwidth()
+            "TOP_MODULE_NAME": self.get_verilog_top_module_name(),
+            "I": self.get_nodeattr("in_shape")[-2],
+            "J": self.get_nodeattr("in_shape")[-1],
+            "SIMD": simd,
+            "WIDTH": dt.bitwidth(),
+            "STREAM_BITS": simd * dt.bitwidth(),
         }
         with open(template_path, "r") as f:
             template = f.read()
@@ -100,9 +98,7 @@ class PTranspose_rtl(PTranspose, RTLBackend):
             key = f"${key_name}$"
             template = template.replace(key, str(code_gen_dict[key_name]))
 
-        with open(
-                os.path.join(code_gen_dir, f"{self.get_verilog_top_module_name()}.v"),
-                "w") as f:
+        with open(os.path.join(code_gen_dir, f"{self.get_verilog_top_module_name()}.v"), "w") as f:
             f.write(template)
 
         sv_files = ["ptranspose.sv", "skid.sv"]
@@ -116,34 +112,31 @@ class PTranspose_rtl(PTranspose, RTLBackend):
             code_gen_dir = f"{self.get_nodeattr('code_gen_dir_ipgen')}/"
             rtllib_dir = f'{os.environ["FINN_ROOT"]}/finn-rtllib/ptranspose'
         else:
-            code_gen_dir = ''
-            rtllib_dir = ''
+            code_gen_dir = ""
+            rtllib_dir = ""
 
         return [
             f"{rtllib_dir}/ptranspose.sv",
             f"{rtllib_dir}/skid.sv",
-            f"{code_gen_dir}{self.get_verilog_top_module_name()}.v"
+            f"{code_gen_dir}{self.get_verilog_top_module_name()}.v",
         ]
 
     def code_generation_ipi(self):
-        """ Constructs and returns the TCL for node instantiation in Vivado IPI. """
+        """Constructs and returns the TCL for node instantiation in Vivado IPI."""
         code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
-        sourcefiles = [
-            "ptranspose.sv",
-            "skid.sv",
-            f'{self.get_verilog_top_module_name()}.v'
-        ]
+        sourcefiles = ["ptranspose.sv", "skid.sv", f"{self.get_verilog_top_module_name()}.v"]
         sourcefiles = [os.path.join(code_gen_dir, f) for f in sourcefiles]
 
         cmd = []
+        tl_name = self.get_verilog_top_module_name()
         for vf in sourcefiles:
-            cmd += [f'add_files -norecurse {vf}']
-        cmd += [ f"create_bd_cell -type module -reference {self.get_verilog_top_module_name()} {self.onnx_node.name}" ]
+            cmd += [f"add_files -norecurse {vf}"]
+        cmd += [f"create_bd_cell -type module -reference {tl_name} {self.onnx_node.name}"]
         return cmd
 
     def execute_node(self, context, graph):
         mode = self.get_nodeattr("exec_mode")
-        if mode == "rtlsim" : 
+        if mode == "rtlsim":
             RTLBackend.execute_node(self, context, graph)
         else:
-            PTranspose.execute_node(self,context,graph)
+            PTranspose.execute_node(self, context, graph)

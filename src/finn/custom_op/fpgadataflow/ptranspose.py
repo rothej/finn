@@ -10,24 +10,24 @@ import numpy as np
 import warnings
 from onnx.helper import make_node
 from qonnx.core.datatype import DataType
+
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
 
 
 class PTranspose(HWCustomOp):
-    """ Abstraction layer for the Parallel 2D transpose. """
+    """Abstraction layer for the Parallel 2D transpose."""
 
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
     def get_nodeattr_types(self):
         my_attrs = {
-            "data_type" : ("s", True, ""),
-            "in_shape"  : ("ints", True, []), # Needs to be len==2 can we assert that somewhere?
-            "SIMD"      : ("i", False, 1)
+            "data_type": ("s", True, ""),
+            "in_shape": ("ints", True, []),  # Needs to be len==2 can we assert that somewhere?
+            "SIMD": ("i", False, 1),
         }
         my_attrs.update(super().get_nodeattr_types())
         return my_attrs
-
 
     def get_normal_input_shape(self, ind=0):
         return self.get_nodeattr("in_shape")
@@ -36,8 +36,8 @@ class PTranspose(HWCustomOp):
         ishape = tuple(self.get_normal_input_shape())
         return ishape[:-2] + (ishape[-1], ishape[-2])
 
-    def get_number_output_values(self): # [STF] Not sure if this is correct
-        return int(np.prod(self.get_normal_output_shape())/self.get_nodeattr("SIMD"))
+    def get_number_output_values(self):  # [STF] Not sure if this is correct
+        return int(np.prod(self.get_normal_output_shape()) / self.get_nodeattr("SIMD"))
 
     def execute_node(self, context, graph):
         node = self.onnx_node
@@ -55,19 +55,20 @@ class PTranspose(HWCustomOp):
 
     def make_shape_compatible_op(self, model):
         in_shape = self.get_normal_input_shape()
-        out_shape = self.get_normal_output_shape()
         return make_node(
             "PTranspose",
             inputs=[self.onnx_node.input[0]],
             outputs=[self.onnx_node.output[0]],
-            in_shape=list(in_shape)
+            in_shape=list(in_shape),
         )
 
     def infer_node_datatype(self, model):
         node = self.onnx_node
         dt = model.get_tensor_datatype(node.input[0])
         if dt != self.get_input_datatype():
-            warn_str = f"data_type changing for {node.name}: {str(self.get_input_datatype())} -> {str(dt)}"
+            warn_str = (
+                f"data_type changing for {node.name}: {str(self.get_input_datatype())} -> {str(dt)}"
+            )
             warnings.warn(warn_str)
         self.set_nodeattr("data_type", dt.name)
         model.set_tensor_datatype(node.output[0], dt)
@@ -98,11 +99,8 @@ class PTranspose(HWCustomOp):
         return tuple(folded_oshape)
 
     def get_folded_input_shape(self, ind=0):
-        ## TODO: This one is a litle different to usual because SIMD can span multiple innerdims
-        ## For now what I have done is flattened the outer dims
         normal_ishape = list(self.get_normal_input_shape())
         simd = self.get_nodeattr("SIMD")
         fold = int(np.prod(normal_ishape) / simd)
-        folded_ishape = [fold , simd]
+        folded_ishape = [fold, simd]
         return tuple(folded_ishape)
-

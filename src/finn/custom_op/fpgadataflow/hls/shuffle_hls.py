@@ -2,37 +2,38 @@
 # Copyright (C) 2025, Advanced Micro Devices, Inc.
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT 
+# SPDX-License-Identifier: MIT
 #
 # @author       Shane T. Fleming <shane.fleming@amd.com>
 ############################################################################
 
+import math
 import numpy as np
 import os
-import math
 from typing import Optional
 
 from finn.custom_op.fpgadataflow import templates
 from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
-from finn.custom_op.fpgadataflow.shuffle import Shuffle 
-from finn.util.data_packing import npy_to_rtlsim_input, rtlsim_output_to_npy
+from finn.custom_op.fpgadataflow.shuffle import Shuffle
 from finn.util.basic import CppBuilder
+from finn.util.data_packing import npy_to_rtlsim_input, rtlsim_output_to_npy
 
-def auto_size_simd(I: int, SIMD: int) -> Optional[int]:
+
+def auto_size_simd(I_dim: int, SIMD: int) -> Optional[int]:
     """
-    Return the smallest divisor d of I such that d > SIMD.
-    If no such divisor exists, return None.
+    Return the smallest divisor d of I_dim such that d > SIMD.
+    if no such divisor exists, return None.
     """
-    if I <= 0:
-        raise ValueError("I must be a positive integer")
+    if I_dim <= 0:
+        raise ValueError("I_dim must be a positive integer")
     if SIMD < 0:
         raise ValueError("SIMD must be a non-negative integer")
 
     candidates = []
-    limit = int(math.isqrt(I))
+    limit = int(math.isqrt(I_dim))
     for a in range(1, limit + 1):
-        if I % a == 0:
-            b = I // a
+        if I_dim % a == 0:
+            b = I_dim // a
             if a > SIMD:
                 candidates.append(a)
             if b > SIMD:
@@ -43,15 +44,15 @@ def auto_size_simd(I: int, SIMD: int) -> Optional[int]:
 
     return min(candidates)
 
+
 class Shuffle_hls(Shuffle, HLSBackend):
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
-        # check some constraints that it is a legal shuffle_hls 
+        # check some constraints that it is a legal shuffle_hls
         last_dim = self.get_nodeattr("in_shape")[-1]
         SIMD = self.get_nodeattr("SIMD")
-        if (last_dim%SIMD != 0):
-            #raise RuntimeError(f"Error! Trying to instantiate a shuffle_hls node where (in_dims[-1]%SIMD != 0)\t\t{last_dim}%{SIMD}")
+        if last_dim % SIMD != 0:
             # Not sure if this is the correct approach
             # we could autosize SIMD to the next biggest value that works.
             # rather than raising an error straight away
@@ -67,9 +68,9 @@ class Shuffle_hls(Shuffle, HLSBackend):
     def global_includes(self):
         self.code_gen_dict["$GLOBALS$"] = [
             '#include "input_gen.hpp"',
-            '#include <ap_int.h>',
-            '#include <hls_vector.h>',
-            '#include <hls_stream.h>',
+            "#include <ap_int.h>",
+            "#include <hls_vector.h>",
+            "#include <hls_stream.h>",
         ]
 
     def defines(self, var):
@@ -77,7 +78,7 @@ class Shuffle_hls(Shuffle, HLSBackend):
         dtype = self.get_input_datatype()
         self.code_gen_dict["$DEFINES$"] = [
             f"""
-            constexpr unsigned  SIMD = {simd}; 
+            constexpr unsigned  SIMD = {simd};
             using  TE = {dtype.get_hls_datatype_str()};
             using  TV = hls::vector<TE, SIMD>;
             """
@@ -86,24 +87,24 @@ class Shuffle_hls(Shuffle, HLSBackend):
     def get_exp_cycles(self):
         out_shape = self.get_nodeattr("out_shape")
         simd = self.get_nodeattr("SIMD")
-        return int(np.prod(out_shape)/simd) 
+        return int(np.prod(out_shape) / simd)
 
     def docompute(self):
         simd = self.get_nodeattr("SIMD")
         out_shape = self.get_nodeattr("out_shape")
-        out_shape[-1] = int(out_shape[-1]/simd)
-        loop_coeffs = [1 if x == 1 else int(x/simd) for x in self.get_nodeattr("loop_coeffs")]  
-        interleaved = [int(item) for pair in zip(out_shape, loop_coeffs) for item in pair] 
+        out_shape[-1] = int(out_shape[-1] / simd)
+        loop_coeffs = [1 if x == 1 else int(x / simd) for x in self.get_nodeattr("loop_coeffs")]
+        interleaved = [int(item) for pair in zip(out_shape, loop_coeffs) for item in pair]
         self.code_gen_dict["$DOCOMPUTE$"] = [
             f"""
             hls::stream<TV>  src0;
-	    hls::stream<TV>  dst0;
+            hls::stream<TV>  dst0;
             #pragma HLS stream variable=src0 depth=2
             #pragma HLS stream variable=dst0 depth=2
 
             move(in0_V, src0);
-	    input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(src0, dst0);
-	    move(dst0, out0_V);
+            input_gen<-1,{np.prod(out_shape)},{','.join(map(str,interleaved))}>(src0, dst0);
+            move(dst0, out0_V);
             """
         ]
 
@@ -112,24 +113,23 @@ class Shuffle_hls(Shuffle, HLSBackend):
             f"""
             void {self.onnx_node.name} (
                 hls::stream<TV> &in0_V,
-	        hls::stream<TV> &out0_V
+                hls::stream<TV> &out0_V
             )
             """
         ]
 
     def pragmas(self):
         self.code_gen_dict["$PRAGMAS$"] = [
-            f"""
+            """
             #pragma HLS interface AXIS port=in0_V
             #pragma HLS interface AXIS port=out0_V
-	    #pragma HLS aggregate variable=in0_V compact=bit
-	    #pragma HLS aggregate variable=out0_V compact=bit
+            #pragma HLS aggregate variable=in0_V compact=bit
+            #pragma HLS aggregate variable=out0_V compact=bit
 
             #pragma HLS interface ap_ctrl_none port=return
             #pragma HLS dataflow disable_start_propagation
             """
         ]
-
 
     def execute_node(self, context, graph):
         mode = self.get_nodeattr("exec_mode")
@@ -145,7 +145,6 @@ class Shuffle_hls(Shuffle, HLSBackend):
         inp = context[node.input[0]]
         inp = inp.reshape(folded_ishape)
         np.save(os.path.join(code_gen_dir, "input_0.npy"), inp)
-        
 
         if mode == "cppsim":
             code_gen_dir = self.get_nodeattr("code_gen_dir_cppsim")
@@ -153,18 +152,13 @@ class Shuffle_hls(Shuffle, HLSBackend):
             super().exec_precompiled_singlenode_model()
             # Load output npy file
             super().npy_to_dynamic_output(context)
-        elif mode =="rtlsim":
+        elif mode == "rtlsim":
             sim = self.get_rtlsim()
             nbits = self.get_instream_width()
-            rtlsim_inp = npy_to_rtlsim_input(
-                f"{code_gen_dir}/input_0.npy", export_dt, nbits 
-            )
+            rtlsim_inp = npy_to_rtlsim_input(f"{code_gen_dir}/input_0.npy", export_dt, nbits)
             super().reset_rtlsim(sim)
 
-            io_dict = {
-                "inputs" : {"in0" : rtlsim_inp},
-                "outputs" : {"out0" : []}
-            }
+            io_dict = {"inputs": {"in0": rtlsim_inp}, "outputs": {"out0": []}}
             self.rtlsim_multi_io(sim, io_dict)
             super().close_rtlsim(sim)
 
@@ -178,12 +172,14 @@ class Shuffle_hls(Shuffle, HLSBackend):
             # load and reshape output
             output = np.load(out_npy_path)
             oshape = self.get_normal_output_shape()
-            output = np.asarray([output], dtype=np.float32,).reshape(*oshape)
+            output = np.asarray(
+                [output],
+                dtype=np.float32,
+            ).reshape(*oshape)
             context[node.output[0]] = output
 
         else:
             raise Exception(f"Unsupported execution mode: {mode}")
-
 
     def compile_singlenode_code(self):
         """
@@ -209,7 +205,6 @@ class Shuffle_hls(Shuffle, HLSBackend):
         builder.build(code_gen_dir)
         self.set_nodeattr("executable_path", builder.executable_path)
 
-
     def code_generation_cppsim(self, model):
         """Generates c++ code for simulation (cppsim)."""
         self.code_gen_dict["$READNPYDATA$"] = [""]
@@ -227,9 +222,9 @@ class Shuffle_hls(Shuffle, HLSBackend):
 
         simd = self.get_nodeattr("SIMD")
         out_shape = self.get_nodeattr("out_shape")
-        out_shape[-1] = int(out_shape[-1]/simd)
-        loop_coeffs = [1 if x == 1 else int(x/simd) for x in self.get_nodeattr("loop_coeffs")]  
-        interleaved = [int(item) for pair in zip(out_shape,loop_coeffs) for item in pair]
+        out_shape[-1] = int(out_shape[-1] / simd)
+        loop_coeffs = [1 if x == 1 else int(x / simd) for x in self.get_nodeattr("loop_coeffs")]
+        interleaved = [int(item) for pair in zip(out_shape, loop_coeffs) for item in pair]
 
         self.code_gen_dict["$DOCOMPUTE$"] = [
             f"""

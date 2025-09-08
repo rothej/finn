@@ -31,13 +31,13 @@ from finn.custom_op.fpgadataflow.rtl.convolutioninputgenerator_rtl import (
 )
 from finn.custom_op.fpgadataflow.rtl.fmpadding_rtl import FMPadding_rtl
 from finn.custom_op.fpgadataflow.rtl.matrixvectoractivation_rtl import MVAU_rtl
+from finn.custom_op.fpgadataflow.rtl.ptranspose_rtl import PTranspose_rtl
 from finn.custom_op.fpgadataflow.rtl.streamingdatawidthconverter_rtl import (
     StreamingDataWidthConverter_rtl,
 )
 from finn.custom_op.fpgadataflow.rtl.streamingfifo_rtl import StreamingFIFO_rtl
 from finn.custom_op.fpgadataflow.rtl.thresholding_rtl import Thresholding_rtl
 from finn.custom_op.fpgadataflow.rtl.vectorvectoractivation_rtl import VVAU_rtl
-from finn.custom_op.fpgadataflow.rtl.ptranspose_rtl import PTranspose_rtl
 
 custom_op = dict()
 

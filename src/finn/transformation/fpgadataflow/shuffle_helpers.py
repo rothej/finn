@@ -2,34 +2,25 @@
 # Copyright (C) 2025, Advanced Micro Devices, Inc.
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT 
+# SPDX-License-Identifier: MIT
 #
 # @author       Shane T. Fleming <shane.fleming@amd.com>
 ############################################################################
-
 import numpy as np
-from functools import partial
-import matplotlib.pyplot as plt 
-import copy
-import math
 
-def shuffle_perfect_loopnest_coeffs(
-        shape:tuple[int],
-        perm:tuple[int]
-    ) -> tuple[int]:
+
+def shuffle_perfect_loopnest_coeffs(shape: tuple[int], perm: tuple[int]) -> tuple[int]:
     """
     Given an input shape and permutation matrix calculate the
     coefficients for the perfect loop nest for HLS generation.
     """
     adjusted_shape = list(shape) + [1]
-    input_coeffs = [np.prod(adjusted_shape[i+1:]) for i in range(len(shape))]
+    input_coeffs = [np.prod(adjusted_shape[i + 1 :]) for i in range(len(shape))]
     out_coeffs = [input_coeffs[i] for i in perm]
     return tuple(out_coeffs)
 
-def innerloop_moves(
-        shape:tuple[int],
-        perm:tuple[int]
-    )->bool:
+
+def innerloop_moves(shape: tuple[int], perm: tuple[int]) -> bool:
     """
     Returns true if the inner dimension moves
     otherwise returns false
@@ -41,63 +32,62 @@ def innerloop_moves(
     else:
         return True
 
+
 def simplify_transpose(shape, perm):
-   """Detect if a multi-dimensional transpose can be reduced to a 2D transpose 
-   and return the simplified transpose.
+    """Detect if a multi-dimensional transpose can be reduced to a 2D transpose
+    and return the simplified transpose.
 
-   It attempts to squeeze singular dimensions, find groups that move together, etc..
-   If it is unable to simplify the shape it returns the original shape. 
+    It attempts to squeeze singular dimensions, find groups that move together, etc..
+    If it is unable to simplify the shape it returns the original shape.
 
-   As an input take the original shape and permutation matrix
-   return the new simplifed shape and permutation matrix
-   
-   """
-   if len(shape) != len(perm):
-       raise ValueError("Shape and permutation must have the same length")
+    As an input take the original shape and permutation list
+    return the new simplifed shape and permutation list
 
-   new_shape = []
-   mapping = {}  # Old index → New index after squeezing
-   
-   new_perm = []
-   new_index = 0
+    """
+    if len(shape) != len(perm):
+        raise ValueError("Shape and permutation must have the same length")
 
-   for old_index, dim in enumerate(shape): # Squeeze the dims
-       if dim > 1:
-           mapping[old_index] = new_index
-           new_shape.append(dim)
-           new_index += 1
+    new_shape = []
+    mapping = {}  # Old index → New index after squeezing
 
-   # Adjust the permutation to match the new shape indices
-   for old_index in perm:
-       if old_index in mapping:
-           new_perm.append(mapping[old_index])
+    new_perm = []
+    new_index = 0
 
-   # Check if perm is now a valid permutation of new_shape indices
-   if sorted(new_perm) != list(range(len(new_perm))):
-       raise ValueError("Invalid permutation indices after adjustment")
+    for old_index, dim in enumerate(shape):  # Squeeze the dims
+        if dim > 1:
+            mapping[old_index] = new_index
+            new_shape.append(dim)
+            new_index += 1
 
-   # Find contiguous groups before and after the permutation
-   def find_groups(shape, perm):
-       groups = []
-       temp_group = [shape[0]]
+    # Adjust the permutation to match the new shape indices
+    for old_index in perm:
+        if old_index in mapping:
+            new_perm.append(mapping[old_index])
 
-       for i in range(1, len(shape)):
-           if perm[i] == perm[i - 1] + 1:  # Check if indices stayed together
-               temp_group.append(shape[i])
-           else:
-               groups.append(temp_group)
-               temp_group = [shape[i]]
-       groups.append(temp_group)
-       return groups
+    # Check if perm is now a valid permutation of new_shape indices
+    if sorted(new_perm) != list(range(len(new_perm))):
+        raise ValueError("Invalid permutation indices after adjustment")
 
-   original_groups = find_groups(new_shape, perm)
-   transposed_groups = find_groups([new_shape[i] for i in new_perm], new_perm)
+    # Find contiguous groups before and after the permutation
+    def find_groups(shape, perm):
+        groups = []
+        temp_group = [shape[0]]
 
-   # If exactly two groups swap places, reduce to a 2D transpose
-   if len(original_groups) == 2 and len(transposed_groups) == 2:
-       simplified_original = (np.prod(original_groups[0]), np.prod(original_groups[1]))
-       simplified_transposed = (simplified_original[1], simplified_original[0])
-       return simplified_original, (1,0)
-   else:
-       return shape, perm
+        for i in range(1, len(shape)):
+            if perm[i] == perm[i - 1] + 1:  # Check if indices stayed together
+                temp_group.append(shape[i])
+            else:
+                groups.append(temp_group)
+                temp_group = [shape[i]]
+        groups.append(temp_group)
+        return groups
 
+    original_groups = find_groups(new_shape, perm)
+    transposed_groups = find_groups([new_shape[i] for i in new_perm], new_perm)
+
+    # If exactly two groups swap places, reduce to a 2D transpose
+    if len(original_groups) == 2 and len(transposed_groups) == 2:
+        simplified_original = (np.prod(original_groups[0]), np.prod(original_groups[1]))
+        return simplified_original, (1, 0)
+    else:
+        return shape, perm
