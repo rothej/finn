@@ -201,6 +201,7 @@ class SetCppSimExec(Transformation):
 @pytest.mark.parametrize("datatype", ["INT8", "INT4"])
 @pytest.mark.parametrize("simd", ["simd1", "simd2", "simd4"])
 @pytest.mark.fpgadataflow
+@pytest.mark.vivado
 def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
     """Checks cppsim of the shuffle_hls layer"""
     dt = DataType[datatype]

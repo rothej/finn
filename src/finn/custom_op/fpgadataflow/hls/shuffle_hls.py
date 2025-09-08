@@ -194,8 +194,10 @@ class Shuffle_hls(Shuffle, HLSBackend):
         builder.append_includes("-I$FINN_ROOT/deps/cnpy/")
         builder.append_includes("-I$FINN_ROOT/custom_hls")
         builder.append_includes("-I$FINN_ROOT/deps/finn-hlslib")
-        builder.append_includes("-I{}/include".format(os.environ["HLS_PATH"]))
-        builder.append_includes("-I{}/include".format(os.environ["VITIS_PATH"]))
+        if 'HLS_PATH' in os.environ:
+            builder.append_includes("-I{}/include".format(os.environ["HLS_PATH"]))
+        if 'VITIS_PATH' in os.environ:
+            builder.append_includes("-I{}/include".format(os.environ["VITIS_PATH"]))
         builder.append_includes("--std=c++14")
         builder.append_includes("-O3")
         builder.append_sources(code_gen_dir + "/*.cpp")
