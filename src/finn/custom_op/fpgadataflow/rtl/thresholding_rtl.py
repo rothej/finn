@@ -164,7 +164,16 @@ class Thresholding_rtl(Thresholding, RTLBackend):
         pe = self.get_nodeattr("PE")
         num_channels = self.get_nodeattr("NumChannels")  # number of channels
         n_thres_steps = self.get_nodeattr("numSteps")
+        idt = DataType[input_data_type]
         wdt = self.get_input_datatype(1)
+
+        if idt.is_integer() and not wdt.is_integer():
+            raise ValueError(
+                "Thresholds must be converted to integers for integer inputs "
+                "using RoundAndClipThresholds transform before code generation."
+            )
+        if not idt.is_integer() and wdt.is_integer():
+            raise ValueError("Floating-point inputs and integer thresholds are not supported.")
 
         # If a single threshold value is found, set num_channels to PE
         thresholds = model.get_initializer(self.onnx_node.input[1])
@@ -179,7 +188,7 @@ class Thresholding_rtl(Thresholding, RTLBackend):
         code_gen_dict["$TOP_MODULE$"] = code_gen_dict["$MODULE_NAME_AXI_WRAPPER$"]
 
         # Identify the module variables
-        i_bitwidth = DataType[input_data_type].bitwidth()
+        i_bitwidth = idt.bitwidth()
 
         code_gen_dict["$N$"] = [str(n_thres_steps)]  # number of needed thresholds
         code_gen_dict["$WT$"] = [
