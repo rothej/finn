@@ -207,7 +207,7 @@ class Thresholding_rtl(Thresholding, RTLBackend):
             code_gen_dict["$SIGNED$"] = [str(0)]
 
         # Is the input datatype floating-point?
-        if self.get_input_datatype(0) == "FLOAT32":
+        if self.get_input_datatype(0) in ["FLOAT32", "FLOAT16"]:
             code_gen_dict["$FPARG$"] = [str(1)]
         else:
             code_gen_dict["$FPARG$"] = [str(0)]
@@ -301,10 +301,11 @@ class Thresholding_rtl(Thresholding, RTLBackend):
                 # it is assumed that the first input of the node is the data input
                 # the second input are the thresholds
                 if in_ind == 0:
-                    assert (
-                        str(context[inputs].dtype) == "float32"
-                    ), """Input datatype is
-                    not float32 as expected."""
+                    assert str(context[inputs].dtype) in [
+                        "float32",
+                        "float16",
+                    ], """Input datatype is
+                    not float32 or float16 as expected."""
                     expected_inp_shape = self.get_folded_input_shape()
                     reshaped_input = context[inputs].reshape(expected_inp_shape)
 
