@@ -176,15 +176,16 @@ class InferThresholdingLayer(Transformation):
                 thl_thres_shape = model.get_tensor_shape(thl_threshold)
                 idt = model.get_tensor_datatype(thl_input)
                 tdt = model.get_tensor_datatype(thl_threshold)
-                # skip conversion for layers with float input
-                if not idt.is_integer():
+
+                # only infer layers where input and thresholds are integers or fp32
+                idt_int = idt.is_integer()
+                tdt_int = tdt.is_integer()
+                idt_fp32 = idt == "FLOAT32"
+                tdt_fp32 = tdt == "FLOAT32"
+                if not (idt_int or idt_fp32):
                     continue
-                assert tdt.is_integer(), (
-                    node.name
-                    + """: MultiThreshold cannot be converted
-                    because thresholds are float type. Input data type is integer,
-                    please run RoundAndClipThresholds to convert thresholds to integer."""
-                )
+                if not (tdt_int or tdt_fp32):
+                    continue
 
                 # check layout of inputs/outputs, and convert if needed
                 # check layout and convert if necessary
