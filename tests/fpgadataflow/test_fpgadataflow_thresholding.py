@@ -191,7 +191,7 @@ def test_fpgadataflow_thresholding(
         pytest.skip("Narrow needs to be false with biploar activation.")
     input_data_type, threshold_data_type = idt_tdt_cfg
     num_steps = activation.get_num_possible_values() - 1
-    if input_data_type == "FLOAT32" and round_thresh:
+    if input_data_type in ["FLOAT32", "FLOAT16"] and round_thresh:
         pytest.skip(
             "Thresholds will not be rounded when inputs are floating-point. "
             "Test case is identical with floating-point input and round_thresh=False."
