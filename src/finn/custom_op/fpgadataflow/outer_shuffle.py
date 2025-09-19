@@ -15,8 +15,9 @@ from qonnx.core.datatype import DataType
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
 
 
-class Shuffle(HWCustomOp):
-    """Abstraction layer for HW Shuffle (rearrange and transpose) layers."""
+class OuterShuffle(HWCustomOp):
+    """Abstraction layer for HW OuterShuffle (rearrange and transpose) layers.
+    Only permutations that do not effect the inner most dimensions are feasible"""
 
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
@@ -59,7 +60,7 @@ class Shuffle(HWCustomOp):
         in_shape = self.get_normal_input_shape()
         out_shape = self.get_normal_output_shape()
         return make_node(
-            "Shuffle",
+            "OuterShuffle",
             inputs=[self.onnx_node.input[0]],
             outputs=[self.onnx_node.output[0]],
             in_shape=list(in_shape),

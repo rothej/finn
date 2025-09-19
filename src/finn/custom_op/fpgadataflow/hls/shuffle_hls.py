@@ -14,7 +14,7 @@ from typing import Optional
 
 from finn.custom_op.fpgadataflow import templates
 from finn.custom_op.fpgadataflow.hlsbackend import HLSBackend
-from finn.custom_op.fpgadataflow.shuffle import Shuffle
+from finn.custom_op.fpgadataflow.outer_shuffle import OuterShuffle
 from finn.util.basic import CppBuilder
 from finn.util.data_packing import npy_to_rtlsim_input, rtlsim_output_to_npy
 
@@ -45,7 +45,7 @@ def auto_size_simd(I_dim: int, SIMD: int) -> Optional[int]:
     return min(candidates)
 
 
-class Shuffle_hls(Shuffle, HLSBackend):
+class OuterShuffle_hls(Shuffle, HLSBackend):
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
@@ -63,7 +63,7 @@ class Shuffle_hls(Shuffle, HLSBackend):
                 raise RuntimeError("Unable to determine a new SIMD value for this transpose.")
 
     def get_nodeattr_types(self):
-        return Shuffle.get_nodeattr_types(self) | HLSBackend.get_nodeattr_types(self)
+        return OuterShuffle.get_nodeattr_types(self) | HLSBackend.get_nodeattr_types(self)
 
     def global_includes(self):
         self.code_gen_dict["$GLOBALS$"] = [

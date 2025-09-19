@@ -1875,7 +1875,7 @@ class InferShuffle(Transformation):
                     )
                 elif perm.ints[-1] == (len(perm.ints) - 1):
                     new_node = helper.make_node(
-                        "Shuffle",
+                        "OuterShuffle",
                         [new_in_tensor],
                         [new_out_tensor],
                         domain="finn.custom_op.fpgadataflow",
@@ -1885,7 +1885,7 @@ class InferShuffle(Transformation):
                         out_shape=out_shape,
                         out_reshaped=out_reshaped,
                         data_type=idt.name,
-                        name=f"Shuffle_{n.name}",
+                        name=f"OuterShuffle_{n.name}",
                         loop_coeffs=shuffle_perfect_loopnest_coeffs(
                             shape=in_reshaped, perm=perm.ints
                         ),
