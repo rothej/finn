@@ -43,10 +43,6 @@ class Shuffle(HWCustomOp):
     def get_normal_output_shape(self, ind=0):
         return self.get_nodeattr("out_reshaped")
 
-    def get_number_output_values(self):
-        folded_oshape = self.get_folded_output_shape()
-        return np.prod(folded_oshape[:-1])  # [STF] Not sure this is correct...
-
     def execute_node(self, context, graph):
         node = self.onnx_node
         input_data = context[node.input[0]]

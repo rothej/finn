@@ -36,9 +36,6 @@ class PTranspose(HWCustomOp):
         ishape = tuple(self.get_normal_input_shape())
         return ishape[:-2] + (ishape[-1], ishape[-2])
 
-    def get_number_output_values(self):  # [STF] Not sure if this is correct
-        return int(np.prod(self.get_normal_output_shape()) / self.get_nodeattr("SIMD"))
-
     def execute_node(self, context, graph):
         node = self.onnx_node
         input_data = context[node.input[0]]
