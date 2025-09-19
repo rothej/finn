@@ -99,7 +99,7 @@ def construct_onnx_model(
 
 
 class SetShuffleSIMD(Transformation):
-    """Set SIMD parameter and enable waveform generation for all Shuffle and PTranspose nodes."""
+    """Set SIMD parameter and enable waveform generation for all Inner and Outer shuffle nodes."""
 
     def __init__(self, simd_value, enable_waveforms=False):
         super().__init__()
@@ -109,7 +109,7 @@ class SetShuffleSIMD(Transformation):
     def apply(self, model):
         for node in model.graph.node:
             if (
-                node.op_type in ["Shuffle_hls", "PTranspose_rtl"]
+                node.op_type in ["Shuffle_hls", "InnerShuffle_rtl"]
                 and "finn.custom_op.fpgadataflow" in node.domain
             ):
                 simd_found = False

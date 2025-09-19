@@ -57,7 +57,7 @@
  * enabling both the write path and the read path to be active simultaneously.
 ****************************************************************************/
 
-// A memory bank in the ptranspose design. Pattern was kept as simple
+// A memory bank in the inner_shuffle design. Pattern was kept as simple
 // as possible to help with Vivado BRAM inference.
 module mem_bank #(
 	int unsigned WIDTH,
@@ -92,9 +92,9 @@ endmodule
 
 
 // ----------------------------------------
-// Parallel Transpose Unit (PTranspose)
+// Parallel Transpose Unit (InnerShuffle)
 // ----------------------------------------
-module ptranspose #(
+module inner_shuffle #(
 	int unsigned BITS,   // Bitwidth of each element
 	int unsigned I   ,   // Input dimension I
 	int unsigned J   ,   // Input dimension J
@@ -423,4 +423,4 @@ module ptranspose #(
 		.ordy(ordy)
 	);
 
-endmodule : ptranspose
+endmodule : inner_shuffle

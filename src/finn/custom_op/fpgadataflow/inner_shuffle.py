@@ -14,7 +14,7 @@ from qonnx.core.datatype import DataType
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
 
 
-class PTranspose(HWCustomOp):
+class InnerShuffle(HWCustomOp):
     """Abstraction layer for the Parallel 2D transpose."""
 
     def __init__(self, onnx_node, **kwargs):
@@ -39,7 +39,7 @@ class PTranspose(HWCustomOp):
     def execute_node(self, context, graph):
         node = self.onnx_node
         input_data = context[node.input[0]]
-        assert len(input_data.shape) >= 2, "PTranspose HWCustomOp requires at least 2D input"
+        assert len(input_data.shape) >= 2, "InnerShuffle HWCustomOp requires at least 2D input"
         # Transpose only the last two dimensions: (..., a, b) -> (..., b, a)
         axes = list(range(len(input_data.shape)))
         axes[-2], axes[-1] = axes[-1], axes[-2]
@@ -53,7 +53,7 @@ class PTranspose(HWCustomOp):
     def make_shape_compatible_op(self, model):
         in_shape = self.get_normal_input_shape()
         return make_node(
-            "PTranspose",
+            "InnerShuffle",
             inputs=[self.onnx_node.input[0]],
             outputs=[self.onnx_node.output[0]],
             in_shape=list(in_shape),

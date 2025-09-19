@@ -25,7 +25,7 @@ output	out0_V_TVALID,
 output	[$STREAM_BITS$-1:0] out0_V_TDATA
 );
 
-ptranspose #(
+inner_shuffle #(
 	.BITS($WIDTH$),
 	.I($I$),
 	.J($J$),

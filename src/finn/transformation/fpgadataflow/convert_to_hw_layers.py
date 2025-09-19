@@ -1755,8 +1755,8 @@ class InferShuffle(Transformation):
 
     def _is_streaming_ptranspose(self, perm, shape):
         """
-        Check if the permutation represents a streaming PTranspose case.
-        A streaming PTranspose works when the last two dimensions are swapped,
+        Check if the permutation represents a streaming InnerShuffle case.
+        A streaming InnerShuffle works when the last two dimensions are swapped,
         regardless of how many outer dimensions there are.
         """
         if len(perm) < 2 or len(shape) < 2:
@@ -1856,19 +1856,19 @@ class InferShuffle(Transformation):
 
                 simd = 1
 
-                # Check if this is a streaming PTranspose case (last two dimensions swap)
+                # Check if this is a streaming InnerShuffle case (last two dimensions swap)
                 is_streaming_ptranspose = self._is_streaming_ptranspose(perm.ints, in_shape)
 
                 if is_streaming_ptranspose:
                     new_node = helper.make_node(
-                        "PTranspose",
+                        "InnerShuffle",
                         [new_in_tensor],
                         [new_out_tensor],
                         domain="finn.custom_op.fpgadataflow",
                         backend="fpgadataflow",
                         in_shape=in_shape,
                         data_type=idt.name,
-                        name=f"PTranspose_{n.name}",
+                        name=f"InnerShuffle_{n.name}",
                         SIMD=simd,
                         I=in_shape[-2],  # Second to last dimension size
                         J=in_shape[-1],  # Last dimension size

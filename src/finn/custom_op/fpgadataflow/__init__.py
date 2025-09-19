@@ -66,7 +66,7 @@ from finn.custom_op.fpgadataflow.labelselect import LabelSelect
 from finn.custom_op.fpgadataflow.lookup import Lookup
 from finn.custom_op.fpgadataflow.matrixvectoractivation import MVAU
 from finn.custom_op.fpgadataflow.pool import Pool
-from finn.custom_op.fpgadataflow.ptranspose import PTranspose
+from finn.custom_op.fpgadataflow.inner_shuffle import InnerShuffle
 from finn.custom_op.fpgadataflow.shuffle import Shuffle
 from finn.custom_op.fpgadataflow.split import StreamingSplit
 from finn.custom_op.fpgadataflow.streamingdataflowpartition import (
@@ -105,4 +105,4 @@ custom_op["StreamingDataWidthConverter"] = StreamingDataWidthConverter
 custom_op["StreamingEltwise"] = StreamingEltwise
 custom_op["UpsampleNearestNeighbour"] = UpsampleNearestNeighbour
 custom_op["Shuffle"] = Shuffle
-custom_op["PTranspose"] = PTranspose
+custom_op["InnerShuffle"] = InnerShuffle

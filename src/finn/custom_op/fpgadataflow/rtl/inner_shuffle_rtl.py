@@ -12,7 +12,7 @@ import shutil
 from qonnx.core.datatype import DataType
 from typing import Optional
 
-from finn.custom_op.fpgadataflow.ptranspose import PTranspose
+from finn.custom_op.fpgadataflow.inner_shuffle import InnerShuffle
 from finn.custom_op.fpgadataflow.rtlbackend import RTLBackend
 
 
@@ -42,13 +42,13 @@ def auto_size_simd(I_dim: int, SIMD: int) -> Optional[int]:
     return min(candidates)
 
 
-class PTranspose_rtl(PTranspose, RTLBackend):
-    """CustomOp wrapper for the finn-rtllib ptranspose component."""
+class InnerShuffle_rtl(InnerShuffle, RTLBackend):
+    """CustomOp wrapper for the finn-rtllib inner_shuffle component."""
 
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
-        # check some constraints that it is a legal PTranspose
+        # check some constraints that it is a legal InnerShuffle
         I_dim = self.get_nodeattr("in_shape")[-2]
         SIMD = self.get_nodeattr("SIMD")
         if I_dim % SIMD != 0:
@@ -63,7 +63,7 @@ class PTranspose_rtl(PTranspose, RTLBackend):
 
     def get_nodeattr_types(self):
         my_attrs = {}
-        my_attrs.update(PTranspose.get_nodeattr_types(self))
+        my_attrs.update(InnerShuffle.get_nodeattr_types(self))
         my_attrs.update(RTLBackend.get_nodeattr_types(self))
         return my_attrs
 
@@ -79,8 +79,8 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         return code_gen_dict
 
     def generate_hdl(self, model, fpgapart, clk):
-        rtlsrc = f'{os.environ["FINN_ROOT"]}/finn-rtllib/ptranspose'
-        template_path = f"{rtlsrc}/ptranspose_template.v"
+        rtlsrc = f'{os.environ["FINN_ROOT"]}/finn-rtllib/inner_shuffle'
+        template_path = f"{rtlsrc}/inner_shuffle_template.v"
         code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
         dt = DataType[self.get_nodeattr("data_type")]
         simd = self.get_nodeattr("SIMD")
@@ -101,7 +101,7 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         with open(os.path.join(code_gen_dir, f"{self.get_verilog_top_module_name()}.v"), "w") as f:
             f.write(template)
 
-        sv_files = ["ptranspose.sv", "skid.sv"]
+        sv_files = ["inner_shuffle.sv", "skid.sv"]
         for sv_files in sv_files:
             shutil.copy(f"{rtlsrc}/{sv_files}", code_gen_dir)
         self.set_nodeattr("ipgen_path", code_gen_dir)
@@ -110,13 +110,13 @@ class PTranspose_rtl(PTranspose, RTLBackend):
     def get_rtl_file_list(self, abspath=False):
         if abspath:
             code_gen_dir = f"{self.get_nodeattr('code_gen_dir_ipgen')}/"
-            rtllib_dir = f'{os.environ["FINN_ROOT"]}/finn-rtllib/ptranspose'
+            rtllib_dir = f'{os.environ["FINN_ROOT"]}/finn-rtllib/inner_shuffle'
         else:
             code_gen_dir = ""
             rtllib_dir = ""
 
         return [
-            f"{rtllib_dir}/ptranspose.sv",
+            f"{rtllib_dir}/inner_shuffle.sv",
             f"{rtllib_dir}/skid.sv",
             f"{code_gen_dir}{self.get_verilog_top_module_name()}.v",
         ]
@@ -124,7 +124,7 @@ class PTranspose_rtl(PTranspose, RTLBackend):
     def code_generation_ipi(self):
         """Constructs and returns the TCL for node instantiation in Vivado IPI."""
         code_gen_dir = self.get_nodeattr("code_gen_dir_ipgen")
-        sourcefiles = ["ptranspose.sv", "skid.sv", f"{self.get_verilog_top_module_name()}.v"]
+        sourcefiles = ["inner_shuffle.sv", "skid.sv", f"{self.get_verilog_top_module_name()}.v"]
         sourcefiles = [os.path.join(code_gen_dir, f) for f in sourcefiles]
 
         cmd = []
@@ -139,4 +139,4 @@ class PTranspose_rtl(PTranspose, RTLBackend):
         if mode == "rtlsim":
             RTLBackend.execute_node(self, context, graph)
         else:
-            PTranspose.execute_node(self, context, graph)
+            InnerShuffle.execute_node(self, context, graph)
