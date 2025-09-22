@@ -12,40 +12,53 @@ from finn.transformation.fpgadataflow.shuffle_helpers import (
 )
 
 
-def apply_pT_operation(perm: List[int]) -> List[int]:
+def apply_inner_shuffle_operation(
+    perm: List[int], shape: List[int] = None, simd: int = 1
+) -> List[int]:
     """
-    Apply pT operation: swap the last two positions
+    Apply inner_shuffle operation: swap the last two positions
     (..., a, b) -> (..., b, a)
-
-    Also referred to as a parallel Transpose
-    Also referred to as InnerShuffle
     """
     if len(perm) < 2:
         return perm[:]
+
+    # Check SIMD constraint for inner_shuffle: SIMD must divide the final
+    # innermost dimension (J)
+    if shape is not None and simd > 1:
+        j_dim = shape[-1]  # Final innermost dimension
+        if j_dim % simd != 0:
+            return perm[:]  # Return unchanged if constraint not satisfied
 
     result = perm[:]
     result[-2], result[-1] = result[-1], result[-2]
     return result
 
 
-def apply_iG_operation(perm: List[int], i: int, j: int) -> Optional[List[int]]:
+def apply_outer_shuffle_operation(
+    perm: List[int], i: int, j: int, shape: List[int] = None, simd: int = 1
+) -> Optional[List[int]]:
     """
-    Apply iG operation: swap positions i and j
+    Apply outer_shuffle operation: swap positions i and j
     Constraint: cannot move the very last dimension
-
-    Also referred to as a input_generator
-    Also referred to as OuterShuffle
     """
     n = len(perm)
     if n < 2:
         return None
 
-    # Check constraints for iG operation - cannot move the very last dimension
+    # Check constraints for outer_shuffle operation - cannot move the very
+    # last dimension
     if i == n - 1 or j == n - 1:
         return None
 
     if i == j or i < 0 or j < 0 or i >= n or j >= n:
         return None
+
+    # Check SIMD constraint for outer_shuffle: SIMD must divide the
+    # innermost dimension that cannot move
+    if shape is not None and simd > 1:
+        innermost_dim = shape[-1]  # The innermost dimension that cannot move
+        if innermost_dim % simd != 0:
+            return None
 
     result = perm[:]
     result[i], result[j] = result[j], result[i]
@@ -53,28 +66,33 @@ def apply_iG_operation(perm: List[int], i: int, j: int) -> Optional[List[int]]:
 
 
 def get_all_possible_moves(
-    perm: List[int],
+    perm: List[int], shape: List[int] = None, simd: int = 1
 ) -> List[Tuple[List[int], str, Optional[Tuple[int, int]]]]:
     """
     Get all possible moves from current permutation.
     Returns list of (new_permutation, operation_type, operation_params) tuples.
-    operation_type is either 'pT' or 'iG'
-    operation_params is None for pT, (i, j) for iG
+
+    Each outer_shuffle move represents a single pairwise swap that doesn't
+    involve the last dimension. Complex permutations are built by chaining
+    multiple such operations.
+
+    operation_type is either 'inner_shuffle' or 'outer_shuffle'
+    operation_params is None for inner_shuffle, (i, j) for outer_shuffle
     """
     moves = []
     n = len(perm)
 
-    # Try pT operation
-    new_perm = apply_pT_operation(perm)
+    # Try inner_shuffle operation
+    new_perm = apply_inner_shuffle_operation(perm, shape, simd)
     if new_perm != perm:
-        moves.append((new_perm, "pT", None))
+        moves.append((new_perm, "inner_shuffle", None))
 
-    # Try all valid iG operations
+    # Try all valid outer_shuffle operations
     for i in range(n):
         for j in range(i + 1, n):
-            new_perm = apply_iG_operation(perm, i, j)
+            new_perm = apply_outer_shuffle_operation(perm, i, j, shape, simd)
             if new_perm is not None and new_perm != perm:
-                moves.append((new_perm, "iG", (i, j)))
+                moves.append((new_perm, "outer_shuffle", (i, j)))
 
     return moves
 
@@ -83,8 +101,8 @@ def is_valid_hardware_permutation(perm_array: List[int]) -> bool:
     """
     Check if a permutation array represents a valid hardware operation.
     Valid operations are:
-    - pT: swap last two elements
-    - iG: swap any two elements except the last two
+    - inner_shuffle: swap last two elements
+    - outer_shuffle: any permutation that doesn't move the last element
     """
     n = len(perm_array)
     if n < 2:
@@ -94,13 +112,16 @@ def is_valid_hardware_permutation(perm_array: List[int]) -> bool:
     if perm_array == identity:
         return True  # Identity is always valid
 
-    expected_pT = identity[:]
-    expected_pT[-2], expected_pT[-1] = expected_pT[-1], expected_pT[-2]
-    if perm_array == expected_pT:
+    expected_inner_shuffle = identity[:]
+    expected_inner_shuffle[-2], expected_inner_shuffle[-1] = (
+        expected_inner_shuffle[-1],
+        expected_inner_shuffle[-2],
+    )
+    if perm_array == expected_inner_shuffle:
         return True
 
     diff_count = sum(1 for i in range(n) if perm_array[i] != identity[i])
-    if diff_count == 2:  # Exactly one swap
+    if diff_count == 2:  # Simple two-element swap (one type of outer_shuffle)
         diff_positions = [i for i in range(n) if perm_array[i] != identity[i]]
         if len(diff_positions) == 2:
             pos1, pos2 = diff_positions
@@ -112,11 +133,15 @@ def is_valid_hardware_permutation(perm_array: List[int]) -> bool:
 
 
 def find_minimal_operation_sequence(
-    start_perm: List[int], target_perm: List[int]
+    start_perm: List[int],
+    target_perm: List[int],
+    shape: List[int] = None,
+    simd: int = 1,
 ) -> Optional[List[Tuple[str, Optional[Tuple[int, int]]]]]:
     """
     Find minimal sequence of operations to transform start_perm into target_perm.
-    Uses BFS to find shortest path, ensuring all intermediate permutations are hardware-valid.
+    Uses BFS to find shortest path, ensuring all intermediate permutations
+    are hardware-valid.
     Returns list of (operation_type, operation_params) tuples.
 
 
@@ -131,10 +156,10 @@ def find_minimal_operation_sequence(
     while queue:
         current_perm, operations = queue.popleft()
 
-        for next_perm, op_type, op_params in get_all_possible_moves(current_perm):
+        for next_perm, op_type, op_params in get_all_possible_moves(current_perm, shape, simd):
             test_operations = operations + [(op_type, op_params)]
             test_perms = convert_operations_to_permutations(
-                list(range(len(start_perm))), test_operations
+                list(range(len(start_perm))), test_operations, shape, simd
             )
 
             if not is_valid_hardware_permutation(test_perms[-1]):
@@ -152,7 +177,10 @@ def find_minimal_operation_sequence(
 
 
 def convert_operations_to_permutations(
-    start_perm: List[int], operations: List[Tuple[str, Optional[Tuple[int, int]]]]
+    start_perm: List[int],
+    operations: List[Tuple[str, Optional[Tuple[int, int]]]],
+    shape: List[int] = None,
+    simd: int = 1,
 ) -> List[List[int]]:
     """
     Convert a sequence of operations to a list of permutation arrays.
@@ -162,13 +190,13 @@ def convert_operations_to_permutations(
     permutations = []
 
     for op_type, op_params in operations:
-        if op_type == "pT":
-            new_perm = apply_pT_operation(current_perm)
-        elif op_type == "iG" and op_params is not None:
+        if op_type == "inner_shuffle":
+            new_perm = apply_inner_shuffle_operation(current_perm, shape, simd)
+        elif op_type == "outer_shuffle" and op_params is not None:
             i, j = op_params
-            new_perm = apply_iG_operation(current_perm, i, j)
+            new_perm = apply_outer_shuffle_operation(current_perm, i, j, shape, simd)
             if new_perm is None:
-                raise RuntimeError(f"Invalid iG operation: ({i}, {j})")
+                raise RuntimeError(f"Invalid outer_shuffle operation: ({i}, {j})")
         else:
             raise RuntimeError(f"Unknown operation: {op_type}")
 
@@ -184,7 +212,7 @@ def convert_operations_to_permutations(
 
 
 def can_be_single_operation(
-    target_perm: List[int],
+    target_perm: List[int], shape: List[int] = None, simd: int = 1
 ) -> Optional[Tuple[str, Optional[Tuple[int, int]]]]:
     """
     Check if the target permutation can be achieved with a single operation.
@@ -197,30 +225,38 @@ def can_be_single_operation(
     if target_perm == start_perm:
         return None
 
-    # Check if it's a simple pT operation (swap last two)
+    # Check if it's a simple inner_shuffle operation (swap last two)
     if n >= 2:
-        expected_pT = apply_pT_operation(start_perm)
-        if target_perm == expected_pT:
-            return ("pT", None)
+        expected_inner_shuffle = apply_inner_shuffle_operation(start_perm, shape, simd)
+        if target_perm == expected_inner_shuffle:
+            return ("inner_shuffle", None)
 
-    # Check if it's a simple iG operation (single swap of any valid positions)
+    # Check if it's a simple outer_shuffle operation (any permutation
+    # that doesn't move the last position)
     for i in range(n):
         for j in range(i + 1, n):
-            expected_iG = apply_iG_operation(start_perm, i, j)
-            if expected_iG is not None and target_perm == expected_iG:
-                return ("iG", (i, j))
+            expected_outer_shuffle = apply_outer_shuffle_operation(start_perm, i, j, shape, simd)
+            if expected_outer_shuffle is not None and target_perm == expected_outer_shuffle:
+                return ("outer_shuffle", (i, j))
 
     return None
 
 
 def decompose_transpose_with_constraints(
-    target_perm: List[int],
+    target_perm: List[int], shape: List[int] = None, simd: int = 1
 ) -> Tuple[List[List[int]], List[str]]:
     """
-    Decompose a target permutation into a sequence of hardware-constrained operations.
+    Decompose a target permutation into a sequence of hardware-constrained
+    operations.
+
+    inner_shuffle: swaps the last two dimensions
+    outer_shuffle: can implement any permutation that doesn't move the last
+                   dimension (may require multiple steps)
+
     Returns (permutations, operation_types).
     - permutations: list of permutation arrays for each step
-    - operation_types: list of operation types ('pT' or 'iG') for each step
+    - operation_types: list of operation types ('inner_shuffle' or
+      'outer_shuffle') for each step
     """
     n = len(target_perm)
     start_perm = list(range(n))
@@ -229,15 +265,15 @@ def decompose_transpose_with_constraints(
         return [], []  # Identity permutation
 
     # First check if this can be done with a single operation
-    single_op = can_be_single_operation(target_perm)
+    single_op = can_be_single_operation(target_perm, shape, simd)
     if single_op is not None:
         op_type, op_params = single_op
         # Create the permutation array for this single operation
-        permutations = convert_operations_to_permutations(start_perm, [single_op])
+        permutations = convert_operations_to_permutations(start_perm, [single_op], shape, simd)
         return permutations, [op_type]
 
     # If not a single operation, find minimal sequence using BFS
-    operations = find_minimal_operation_sequence(start_perm, target_perm)
+    operations = find_minimal_operation_sequence(start_perm, target_perm, shape, simd)
 
     if operations is None:
         raise RuntimeError(f"No solution found for permutation: {target_perm}")
@@ -246,7 +282,7 @@ def decompose_transpose_with_constraints(
         return [], []  # Identity permutation
 
     # Convert operations to permutation arrays
-    permutations = convert_operations_to_permutations(start_perm, operations)
+    permutations = convert_operations_to_permutations(start_perm, operations, shape, simd)
     operation_types = [op[0] for op in operations]
 
     return permutations, operation_types
@@ -283,9 +319,12 @@ class ShuffleDecomposition(Transformation):
                 continue
 
             perm = self.get_perm(node)
+            f_inst = getCustomOp(node)
+            in_shape = f_inst.get_nodeattr("in_reshaped")
+            simd = f_inst.get_nodeattr("SIMD")
 
             try:
-                P_list, operation_types = decompose_transpose_with_constraints(perm)
+                P_list, operation_types = decompose_transpose_with_constraints(perm, in_shape, simd)
                 if len(P_list) == 0:
                     print("\tNo swaps necessary (identity permutation).")
                     continue
@@ -296,15 +335,14 @@ class ShuffleDecomposition(Transformation):
             orig_output = list(node.output)
 
             if len(orig_input) != 1 or len(orig_output) != 1:
-                # Transpose usually has one input and one output; if not, skip replacement
+                # Transpose usually has one input and one output; if not,
+                # skip replacement
                 # TODO: Should this raise an exception? Probably need to be handled.
                 print(f"\tSkipping node {node.name}: unexpected number of inputs/outputs.")
                 continue
 
             prev_tensor = orig_input[0]
             new_nodes = []
-            f_inst = getCustomOp(node)
-            in_shape = f_inst.get_nodeattr("in_reshaped")
             orig_out_shape = f_inst.get_nodeattr("out_reshaped")
 
             # Create decomposed transposes using hardware-constrained operations
