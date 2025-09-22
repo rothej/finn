@@ -116,6 +116,7 @@ default_build_dataflow_steps = [
     "step_target_fps_parallelization",
     "step_apply_folding_config",
     "step_minimize_bit_width",
+    "step_transpose_decomposition",
     "step_generate_estimate_reports",
     "step_hw_codegen",
     "step_hw_ipgen",

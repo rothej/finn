@@ -415,12 +415,14 @@ def step_specialize_layers(model: ModelWrapper, cfg: DataflowBuildConfig):
 def step_transpose_decomposition(model: ModelWrapper, cfg: DataflowBuildConfig):
     """Decomposes a Shuffle into a chain of InnerShuffle and OuterShuffles that
     can be specialised into hardware operators.
+    This should be executed after the folding has been configured.
     """
-    model = model.transform(ShuffleDecomposition())
-    model = model.transform(InferInnerOuterShuffles())
-    model = model.transform(SpecializeLayers(cfg._resolve_fpga_part()))
-    model = model.transform(InferShapes())
-    model = model.transform(InferDataTypes())
+    if model.get_nodes_by_op_type("Shuffle"):
+        model = model.transform(ShuffleDecomposition())
+        model = model.transform(InferInnerOuterShuffles())
+        model = model.transform(SpecializeLayers(cfg._resolve_fpga_part()))
+        model = model.transform(InferShapes())
+        model = model.transform(InferDataTypes())
     return model
 
 
