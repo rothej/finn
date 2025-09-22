@@ -30,8 +30,8 @@ from finn.custom_op.fpgadataflow.rtl.convolutioninputgenerator_rtl import (
     ConvolutionInputGenerator_rtl,
 )
 from finn.custom_op.fpgadataflow.rtl.fmpadding_rtl import FMPadding_rtl
-from finn.custom_op.fpgadataflow.rtl.matrixvectoractivation_rtl import MVAU_rtl
 from finn.custom_op.fpgadataflow.rtl.inner_shuffle_rtl import InnerShuffle_rtl
+from finn.custom_op.fpgadataflow.rtl.matrixvectoractivation_rtl import MVAU_rtl
 from finn.custom_op.fpgadataflow.rtl.streamingdatawidthconverter_rtl import (
     StreamingDataWidthConverter_rtl,
 )

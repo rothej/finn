@@ -109,7 +109,7 @@ class SetShuffleSIMD(Transformation):
     def apply(self, model):
         for node in model.graph.node:
             if (
-                node.op_type in ["Shuffle_hls", "InnerShuffle_rtl"]
+                node.op_type in ["OuterShuffle_hls", "InnerShuffle_rtl"]
                 and "finn.custom_op.fpgadataflow" in node.domain
             ):
                 simd_found = False
@@ -144,7 +144,10 @@ class SetCppSimExec(Transformation):
 
     def apply(self, model):
         for node in model.graph.node:
-            if node.op_type in ["Shuffle_hls"] and "finn.custom_op.fpgadataflow" in node.domain:
+            if (
+                node.op_type in ["OuterShuffle_hls"]
+                and "finn.custom_op.fpgadataflow" in node.domain
+            ):
                 exec_mode_found = False
                 for attr in node.attribute:
                     if attr.name == "exec_mode":

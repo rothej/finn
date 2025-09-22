@@ -45,7 +45,7 @@ def auto_size_simd(I_dim: int, SIMD: int) -> Optional[int]:
     return min(candidates)
 
 
-class OuterShuffle_hls(Shuffle, HLSBackend):
+class OuterShuffle_hls(OuterShuffle, HLSBackend):
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
 
