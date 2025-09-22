@@ -45,10 +45,6 @@ from qonnx.util.onnx import nchw_to_nhwc
 
 # Module containing specializations of elementwise binary operations
 import finn.custom_op.fpgadataflow.elementwise_binary as elementwise_binary
-from finn.transformation.fpgadataflow.shuffle_helpers import (
-    innerloop_moves,
-    shuffle_perfect_loopnest_coeffs,
-)
 
 
 class InferConvInpGen(Transformation):
@@ -1856,51 +1852,22 @@ class InferShuffle(Transformation):
 
                 simd = 1
 
-                # Check if this is a streaming InnerShuffle case (last two dimensions swap)
-                is_streaming_ptranspose = self._is_streaming_ptranspose(perm.ints, in_shape)
-
-                if is_streaming_ptranspose:
-                    new_node = helper.make_node(
-                        "InnerShuffle",
-                        [new_in_tensor],
-                        [new_out_tensor],
-                        domain="finn.custom_op.fpgadataflow",
-                        backend="fpgadataflow",
-                        in_shape=in_shape,
-                        data_type=idt.name,
-                        name=f"InnerShuffle_{n.name}",
-                        SIMD=simd,
-                        I=in_shape[-2],  # Second to last dimension size
-                        J=in_shape[-1],  # Last dimension size
-                    )
-                elif perm.ints[-1] == (len(perm.ints) - 1):
-                    new_node = helper.make_node(
-                        "OuterShuffle",
-                        [new_in_tensor],
-                        [new_out_tensor],
-                        domain="finn.custom_op.fpgadataflow",
-                        backend="fpgadataflow",
-                        in_shape=in_shape,
-                        in_reshaped=in_reshaped,
-                        out_shape=out_shape,
-                        out_reshaped=out_reshaped,
-                        data_type=idt.name,
-                        name=f"OuterShuffle_{n.name}",
-                        loop_coeffs=shuffle_perfect_loopnest_coeffs(
-                            shape=in_reshaped, perm=perm.ints
-                        ),
-                        inner_moves=innerloop_moves(shape=in_reshaped, perm=list(perm.ints)),
-                        SIMD=simd,
-                        NumChannels=in_reshaped[-1],
-                    )
-                    new_node.attribute.extend([perm])
-                else:
-                    raise RuntimeError(
-                        f"""
-                        Transpose with permutation {perm.ints} cannot be mapped into hardware.
-                        Has the TransposeDecomposition transformation been called?
-                        """
-                    )
+                new_node = helper.make_node(
+                    "Shuffle",
+                    [new_in_tensor],
+                    [new_out_tensor],
+                    domain="finn.custom_op.fpgadataflow",
+                    backend="fpgadataflow",
+                    in_shape=in_shape,
+                    in_reshaped=in_reshaped,
+                    out_shape=out_shape,
+                    out_reshaped=out_reshaped,
+                    data_type=idt.name,
+                    name=f"Shuffle_{n.name}",
+                    SIMD=simd,
+                    NumChannels=in_reshaped[-1],
+                )
+                new_node.attribute.extend([perm])
                 graph.node.insert(node_ind, new_node)
 
                 for i in to_remove:

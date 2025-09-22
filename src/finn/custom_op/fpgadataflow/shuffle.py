@@ -14,10 +14,9 @@ from qonnx.core.datatype import DataType
 
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
 
-
-class OuterShuffle(HWCustomOp):
-    """Abstraction layer for HW OuterShuffle (rearrange and transpose) layers.
-    Only permutations that do not effect the inner most dimensions are feasible"""
+class Shuffle(HWCustomOp):
+    """Abstraction layer for Shuffle (rearrange and transpose) layers.
+    This operator is later transformed into InnerShuffle and OuterShuffle operations."""
 
     def __init__(self, onnx_node, **kwargs):
         super().__init__(onnx_node, **kwargs)
@@ -29,7 +28,6 @@ class OuterShuffle(HWCustomOp):
             "in_shape": ("ints", True, []),
             "out_reshaped": ("ints", True, []),
             "out_shape": ("ints", True, []),
-            "loop_coeffs": ("ints", True, []),
             "perm": ("ints", True, []),
             "SIMD": ("i", False, 1),
             "NumChannels": ("i", False, 128),
@@ -55,16 +53,20 @@ class OuterShuffle(HWCustomOp):
         data_type = DataType[self.get_nodeattr("data_type")]
         return data_type
 
+    #def make_shape_compatible_op(self, model):
+    #    in_shape = self.get_normal_input_shape()
+    #    out_shape = self.get_normal_output_shape()
+    #    return make_node(
+    #        "Shuffle",
+    #        inputs=[self.onnx_node.input[0]],
+    #        outputs=[self.onnx_node.output[0]],
+    #        in_shape=list(in_shape),
+    #        out_shape=list(out_shape),
+    #    )
+
     def make_shape_compatible_op(self, model):
-        in_shape = self.get_normal_input_shape()
-        out_shape = self.get_normal_output_shape()
-        return make_node(
-            "OuterShuffle",
-            inputs=[self.onnx_node.input[0]],
-            outputs=[self.onnx_node.output[0]],
-            in_shape=list(in_shape),
-            out_shape=list(out_shape),
-        )
+        oshape = self.get_normal_output_shape()
+        return super().make_const_shape_op(oshape)
 
     def infer_node_datatype(self, model):
         node = self.onnx_node

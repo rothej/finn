@@ -1,9 +1,15 @@
 from collections import deque
 from onnx import helper
+from operator import itemgetter
+from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
 from typing import List, Optional, Tuple
+
+from finn.transformation.fpgadataflow.shuffle_helpers import (
+    shuffle_perfect_loopnest_coeffs,
+)
 
 
 def apply_pT_operation(perm: List[int]) -> List[int]:
@@ -244,11 +250,11 @@ def decompose_transpose_with_constraints(
     return permutations, operation_types
 
 
-class TransposeDecomposition(Transformation):
+class ShuffleDecomposition(Transformation):
     """
-    Transformation that decomposes Transpose nodes into
-    a chain of single-swap Transpose nodes. Uses a snapshot of the original node list
-    so newly created nodes aren't reprocessed during the same pass.
+    Transformation that decomposes Shuffle nodes into
+    a chain of Shuffle ops that can map to InnerShuffle
+    and OuterShuffle nodes.
     """
 
     def __init__(self, debug=False):
@@ -271,7 +277,7 @@ class TransposeDecomposition(Transformation):
         original_nodes = list(g.node)
 
         for node in original_nodes:
-            if node.op_type != "Transpose":
+            if node.op_type != "Shuffle":
                 continue
 
             perm = self.get_perm(node)
@@ -295,25 +301,39 @@ class TransposeDecomposition(Transformation):
 
             prev_tensor = orig_input[0]
             new_nodes = []
+            f_inst = getCustomOp(node)
+            in_shape = f_inst.get_nodeattr("in_reshaped")
+            orig_out_shape = f_inst.get_nodeattr("out_reshaped")
 
             # Create decomposed transposes using hardware-constrained operations
             for step_idx, (P, op_type) in enumerate(zip(P_list, operation_types), start=1):
                 step_name = self._unique(f"{node.name}_{op_type}_step{step_idx}")
+                out_shape = itemgetter(*P)(in_shape)
                 if step_idx < len(P_list):
                     out_tensor = self._unique(f"{node.output[0]}_step{step_idx}")
+                    out_reshaped = out_shape
                 else:
                     out_tensor = orig_output[0]
+                    out_reshaped = orig_out_shape
 
                 perm_attr = helper.make_attribute("perm", P)
                 transpose_node = helper.make_node(
-                    op_type="Transpose",
+                    op_type="Shuffle",
+                    domain="finn.custom_op.fpgadataflow",
                     inputs=[prev_tensor],
                     outputs=[out_tensor],
+                    in_shape=in_shape,  # These are all incorrect now though...
+                    in_reshaped=in_shape,
+                    out_shape=out_shape,
+                    out_reshaped=out_reshaped,
+                    SIMD=f_inst.get_nodeattr("SIMD"),
+                    data_type=f_inst.get_nodeattr("data_type"),
                     name=step_name,
                 )
                 transpose_node.attribute.extend([perm_attr])
                 new_nodes.append(transpose_node)
                 prev_tensor = out_tensor
+                in_shape = out_shape
 
             for nnode in new_nodes:
                 g.node.append(nnode)
@@ -329,3 +349,91 @@ class TransposeDecomposition(Transformation):
         model = model.transform(InferShapes())
         model = model.transform(InferDataTypes())
         return model, False
+
+
+def _is_inner_shuffle(perm, shape):
+    """
+    Check if the permutation represents a streaming InnerShuffle case.
+    A streaming InnerShuffle is only possible when only the last two dimensions
+    are swapped, regardless of how many outer dimensions there are.
+    """
+    if len(perm) < 2 or len(shape) < 2:
+        return False
+
+    # Check if last two dimensions are swapped while others stay in order
+    expected_perm = list(range(len(perm) - 2)) + [len(perm) - 1, len(perm) - 2]
+    return perm == expected_perm
+
+
+class InferInnerOuterShuffles(Transformation):
+    """
+    Infers Inner and Outer Shuffles from Shuffle operators.
+    This should run after the ShuffleDecomposition transformation.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def apply(self, model):
+        graph = model.graph
+        graph_modified = False
+        node_ind = 0
+        for node in graph.node:
+            node_ind += 1
+            if node.op_type == "Shuffle":  # should we also check for fpgadataflow here?
+                to_remove = [node]
+                new_in_tensor = node.input[0]
+                new_out_tensor = node.output[0]  # What if a transpose is going to multiple sinks?
+                f_inst = getCustomOp(node)
+                in_shape = f_inst.get_nodeattr("in_shape")
+                in_reshaped = f_inst.get_nodeattr("in_reshaped")
+                out_shape = f_inst.get_nodeattr("out_shape")
+                out_reshaped = f_inst.get_nodeattr("out_reshaped")
+                data_type = f_inst.get_nodeattr("data_type")
+                perm = f_inst.get_nodeattr("perm")
+                simd = f_inst.get_nodeattr("SIMD")
+
+                if _is_inner_shuffle(perm, in_shape):
+                    new_node = helper.make_node(
+                        "InnerShuffle",
+                        [new_in_tensor],
+                        [new_out_tensor],
+                        domain="finn.custom_op.fpgadataflow",
+                        backend="fpgadataflow",
+                        in_shape=in_shape,
+                        data_type=data_type,
+                        perm=perm,
+                        name=f"InnerShuffle_{node.name}",
+                        SIMD=simd,
+                        I=in_shape[-2],  # Second to last dim
+                        J=in_shape[-1],  # Last dim
+                    )
+                else:
+                    new_node = helper.make_node(
+                        "OuterShuffle",
+                        [new_in_tensor],
+                        [new_out_tensor],
+                        domain="finn.custom_op.fpgadataflow",
+                        backend="fpgadataflow",
+                        in_shape=in_shape,
+                        in_reshaped=in_reshaped,
+                        perm=perm,
+                        out_shape=out_shape,
+                        out_reshaped=out_reshaped,
+                        data_type=data_type,
+                        name=f"OuterShuffle_{node.name}",
+                        loop_coeffs=shuffle_perfect_loopnest_coeffs(shape=in_reshaped, perm=perm),
+                        SIMD=simd,
+                        NumChannels=in_reshaped[-1],
+                    )
+                graph.node.insert(node_ind, new_node)
+
+                for i in to_remove:
+                    graph.node.remove(i)
+                    graph_modified = True
+
+        if graph_modified:
+            model = model.transform(InferShapes())
+            model = model.transform(InferDataTypes())
+
+        return (model, graph_modified)

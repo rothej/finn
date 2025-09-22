@@ -112,6 +112,10 @@ from finn.transformation.fpgadataflow.set_fifo_depths import (
 from finn.transformation.fpgadataflow.set_folding import SetFolding
 from finn.transformation.fpgadataflow.specialize_layers import SpecializeLayers
 from finn.transformation.fpgadataflow.synth_ooc import SynthOutOfContext
+from finn.transformation.fpgadataflow.transpose_decomposition import (
+    InferInnerOuterShuffles,
+    ShuffleDecomposition,
+)
 from finn.transformation.fpgadataflow.vitis_build import VitisBuild
 from finn.transformation.move_reshape import RemoveCNVtoFCFlatten
 from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
@@ -402,6 +406,18 @@ def step_specialize_layers(model: ModelWrapper, cfg: DataflowBuildConfig):
     if cfg.specialize_layers_config_file is not None:
         model = model.transform(GiveUniqueNodeNames())
         model = model.transform(ApplyConfig(cfg.specialize_layers_config_file))
+    model = model.transform(SpecializeLayers(cfg._resolve_fpga_part()))
+    model = model.transform(InferShapes())
+    model = model.transform(InferDataTypes())
+    return model
+
+
+def step_transpose_decomposition(model: ModelWrapper, cfg: DataflowBuildConfig):
+    """Decomposes a Shuffle into a chain of InnerShuffle and OuterShuffles that
+    can be specialised into hardware operators.
+    """
+    model = model.transform(ShuffleDecomposition())
+    model = model.transform(InferInnerOuterShuffles())
     model = model.transform(SpecializeLayers(cfg._resolve_fpga_part()))
     model = model.transform(InferShapes())
     model = model.transform(InferDataTypes())

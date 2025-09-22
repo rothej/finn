@@ -38,7 +38,8 @@ from finn.transformation.fpgadataflow.set_exec_mode import SetExecMode
 from finn.transformation.fpgadataflow.specialize_layers import SpecializeLayers
 from finn.transformation.fpgadataflow.synth_ooc import SynthOutOfContext
 from finn.transformation.fpgadataflow.transpose_decomposition import (
-    TransposeDecomposition,
+    InferInnerOuterShuffles,
+    ShuffleDecomposition,
 )
 
 test_fpga_part: str = "xcv80-lsva4737-2MHP-e-S"
@@ -228,13 +229,17 @@ def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
     # Attempt to build the HLS for this
-    model = model.transform(TransposeDecomposition())
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
+
+    model = model.transform(SetShuffleSIMD(simd))
+    model = model.transform(ShuffleDecomposition())
+    model = model.transform(InferInnerOuterShuffles())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
 
-    model = model.transform(SetShuffleSIMD(simd))
     model = model.transform(SetCppSimExec())
     model = model.transform(PrepareCppSim())
     model = model.transform(CompileCppSim())
@@ -494,10 +499,14 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     y_ref = oxe.execute_onnx(model, input_t)[out_name]
 
     # Attempt to build the HLS/RTL for this
-    model = model.transform(TransposeDecomposition())
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
-    model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
+    model = model.transform(SetShuffleSIMD(simd))
+
+    model = model.transform(ShuffleDecomposition())
+    model = model.transform(InferInnerOuterShuffles())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
 
@@ -751,10 +760,14 @@ def test_stitched_ip_shuffle_layer(shuffle_param, datatype, simd):
         dt=dt,
     )
 
-    model = model.transform(TransposeDecomposition())
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(SetShuffleSIMD(simd))
+
+    model = model.transform(ShuffleDecomposition())
+    model = model.transform(InferInnerOuterShuffles())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
 
