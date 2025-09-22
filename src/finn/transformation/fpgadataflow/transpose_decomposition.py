@@ -18,6 +18,7 @@ def apply_pT_operation(perm: List[int]) -> List[int]:
     (..., a, b) -> (..., b, a)
 
     Also referred to as a parallel Transpose
+    Also referred to as InnerShuffle
     """
     if len(perm) < 2:
         return perm[:]
@@ -33,6 +34,7 @@ def apply_iG_operation(perm: List[int], i: int, j: int) -> Optional[List[int]]:
     Constraint: cannot move the very last dimension
 
     Also referred to as a input_generator
+    Also referred to as OuterShuffle
     """
     n = len(perm)
     if n < 2:
@@ -322,7 +324,7 @@ class ShuffleDecomposition(Transformation):
                     domain="finn.custom_op.fpgadataflow",
                     inputs=[prev_tensor],
                     outputs=[out_tensor],
-                    in_shape=in_shape,  # These are all incorrect now though...
+                    in_shape=in_shape,
                     in_reshaped=in_shape,
                     out_shape=out_shape,
                     out_reshaped=out_reshaped,
