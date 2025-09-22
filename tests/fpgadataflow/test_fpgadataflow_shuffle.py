@@ -109,10 +109,7 @@ class SetShuffleSIMD(Transformation):
 
     def apply(self, model):
         for node in model.graph.node:
-            if (
-                node.op_type in ["OuterShuffle_hls", "InnerShuffle_rtl"]
-                and "finn.custom_op.fpgadataflow" in node.domain
-            ):
+            if node.op_type in ["Shuffle"] and "finn.custom_op.fpgadataflow" in node.domain:
                 simd_found = False
                 for attr in node.attribute:
                     if attr.name == "SIMD":
@@ -501,7 +498,7 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     # Attempt to build the HLS/RTL for this
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
-    model = model.transform(SetShuffleSIMD(simd))
+    model = model.transform(SetShuffleSIMD(simd, enable_waveforms=True))
 
     model = model.transform(ShuffleDecomposition())
     model = model.transform(InferInnerOuterShuffles())
