@@ -180,11 +180,11 @@ class InferThresholdingLayer(Transformation):
                 # only infer layers where input and thresholds are integers or fp32
                 idt_int = idt.is_integer()
                 tdt_int = tdt.is_integer()
-                idt_fp32 = idt == "FLOAT32"
-                tdt_fp32 = tdt == "FLOAT32"
-                if not (idt_int or idt_fp32):
+                idt_fp = idt in ["FLOAT32", "FLOAT16"]
+                tdt_fp = tdt in ["FLOAT32", "FLOAT16"]
+                if not (idt_int or idt_fp):
                     continue
-                if not (tdt_int or tdt_fp32):
+                if not (tdt_int or tdt_fp):
                     continue
 
                 # check layout of inputs/outputs, and convert if needed

@@ -296,7 +296,7 @@ compilation transformations?
             folded_ishape = self.get_folded_input_shape(i)
             inp_val = context[inp]
             # Make sure the input has the right container datatype
-            if inp_val.dtype is not np.float32:
+            if inp_val.dtype not in [np.float32, np.float16]:
                 # Issue a warning to make the user aware of this type-cast
                 warnings.warn(
                     f"{node.name}: Changing input container datatype from "
@@ -410,7 +410,7 @@ compilation transformations?
                 # use binary for bipolar storage
                 dtype = DataType["BINARY"]
             elem_hls_type = dtype.get_hls_datatype_str()
-            npy_type = "float"
+            npy_type = "half" if elem_hls_type == "half" else "float"
             npy_in = "%s/input_%s.npy" % (code_gen_dir, i)
 
             iwidth = self.get_instream_width(i)
@@ -525,7 +525,7 @@ compilation transformations?
                 # use binary for bipolar storage
                 dtype = DataType["BINARY"]
             elem_hls_type = dtype.get_hls_datatype_str()
-            npy_type = "float"
+            npy_type = "half" if elem_hls_type == "half" else "float"
             npy_out = "%s/output_%s.npy" % (code_gen_dir, o)
             oshape = self.get_folded_output_shape(o)
             oshape_cpp_str = str(oshape).replace("(", "{").replace(")", "}")

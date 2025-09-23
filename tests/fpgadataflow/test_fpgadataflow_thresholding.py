@@ -153,6 +153,7 @@ def make_single_multithresholding_modelwrapper(
         (DataType["INT8"], DataType["INT25"]),
         (DataType["UINT5"], DataType["UINT8"]),
         (DataType["FLOAT32"], DataType["FLOAT32"]),
+        (DataType["FLOAT16"], DataType["FLOAT16"]),
     ],
 )
 @pytest.mark.parametrize("fold", [-1, 1, 2])
@@ -190,7 +191,7 @@ def test_fpgadataflow_thresholding(
         pytest.skip("Narrow needs to be false with biploar activation.")
     input_data_type, threshold_data_type = idt_tdt_cfg
     num_steps = activation.get_num_possible_values() - 1
-    if input_data_type == "FLOAT32" and round_thresh:
+    if input_data_type in ["FLOAT32", "FLOAT16"] and round_thresh:
         pytest.skip(
             "Thresholds will not be rounded when inputs are floating-point. "
             "Test case is identical with floating-point input and round_thresh=False."
@@ -243,7 +244,7 @@ def test_fpgadataflow_thresholding(
 
     # Perform functional validation of the InferThresholdingLayer transform
     y_produced = oxe.execute_onnx(model, input_dict)[model.graph.output[0].name]
-    assert (y_produced == y_expected).all()
+    assert (y_produced.astype(np.float32) == y_expected.astype(np.float32)).all()
 
     # Transform to the specified implementation style, either the
     # RTL or HLS according to test parameters
@@ -275,7 +276,7 @@ def test_fpgadataflow_thresholding(
         model = model.transform(PrepareRTLSim())
 
     y_produced = oxe.execute_onnx(model, input_dict)[model.graph.output[0].name]
-    assert (y_produced == y_expected).all()
+    assert (y_produced.astype(np.float32) == y_expected.astype(np.float32)).all()
 
     if exec_mode == "rtlsim":
         if impl_style == "hls":
