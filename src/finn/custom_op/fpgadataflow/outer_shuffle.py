@@ -25,9 +25,9 @@ class OuterShuffle(HWCustomOp):
     def get_nodeattr_types(self):
         my_attrs = {
             "data_type": ("s", True, ""),
-            "in_reshaped": ("ints", True, []),
+            "transpose_in_shape": ("ints", True, []),
             "in_shape": ("ints", True, []),
-            "out_reshaped": ("ints", True, []),
+            "transpose_out_shape": ("ints", True, []),
             "out_shape": ("ints", True, []),
             "loop_coeffs": ("ints", True, []),
             "perm": ("ints", True, []),
@@ -38,17 +38,17 @@ class OuterShuffle(HWCustomOp):
         return my_attrs
 
     def get_normal_input_shape(self, ind=0):
-        return self.get_nodeattr("in_reshaped")
+        return self.get_nodeattr("in_shape")
 
     def get_normal_output_shape(self, ind=0):
-        return self.get_nodeattr("out_reshaped")
+        return self.get_nodeattr("out_shape")
 
     def execute_node(self, context, graph):
         node = self.onnx_node
         input_data = context[node.input[0]]
-        input_reshaped = input_data.reshape(self.get_nodeattr("in_reshaped"))
+        input_reshaped = input_data.reshape(self.get_nodeattr("transpose_in_shape"))
         transposed = np.transpose(input_reshaped, axes=self.get_nodeattr("perm"))
-        output_reshaped = transposed.reshape(self.get_nodeattr("out_reshaped"))
+        output_reshaped = transposed.reshape(self.get_nodeattr("out_shape"))
         context[node.output[0]] = output_reshaped
 
     def get_input_datatype(self, ind=0):
@@ -96,7 +96,7 @@ class OuterShuffle(HWCustomOp):
 
     def get_folded_output_shape(self, ind=0):
         normal_oshape = list(self.get_normal_output_shape())
-        simd = self.get_nodeattr("SIMD")
+        simd = self.get_nodeattr("SIMD" ) 
         assert normal_oshape[-1] % simd == 0, "SIMD must divide into the innermost output dimension"
         fold = int(normal_oshape[-1] / simd)
         folded_oshape = normal_oshape[:-1] + [fold, simd]
@@ -104,7 +104,7 @@ class OuterShuffle(HWCustomOp):
 
     def get_folded_input_shape(self, ind=0):
         normal_ishape = list(self.get_normal_input_shape())
-        simd = self.get_nodeattr("SIMD")
+        simd = self.get_nodeattr("SIMD") 
         assert normal_ishape[-1] % simd == 0, "SIMD must divide into the innermost input dimension"
         fold = int(normal_ishape[-1] / simd)
         folded_ishape = normal_ishape[:-1] + [fold, simd]

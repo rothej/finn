@@ -320,7 +320,7 @@ class ShuffleDecomposition(Transformation):
 
             perm = self.get_perm(node)
             f_inst = getCustomOp(node)
-            in_shape = f_inst.get_nodeattr("in_reshaped")
+            in_shape = f_inst.get_nodeattr("transpose_in_shape")
             simd = f_inst.get_nodeattr("SIMD")
 
             try:
@@ -343,7 +343,7 @@ class ShuffleDecomposition(Transformation):
 
             prev_tensor = orig_input[0]
             new_nodes = []
-            orig_out_shape = f_inst.get_nodeattr("out_reshaped")
+            orig_out_shape = f_inst.get_nodeattr("out_shape")
 
             # Create decomposed transposes using hardware-constrained operations
             for step_idx, (P, op_type) in enumerate(zip(P_list, operation_types), start=1):
@@ -363,9 +363,9 @@ class ShuffleDecomposition(Transformation):
                     inputs=[prev_tensor],
                     outputs=[out_tensor],
                     in_shape=in_shape,
-                    in_reshaped=in_shape,
-                    out_shape=out_shape,
-                    out_reshaped=out_reshaped,
+                    transpose_in_shape=in_shape,
+                    transpose_out_shape=out_shape,
+                    out_shape=out_reshaped,
                     SIMD=f_inst.get_nodeattr("SIMD"),
                     data_type=f_inst.get_nodeattr("data_type"),
                     name=step_name,
@@ -426,9 +426,9 @@ class InferInnerOuterShuffles(Transformation):
                 new_out_tensor = node.output[0]  # What if a transpose is going to multiple sinks?
                 f_inst = getCustomOp(node)
                 in_shape = f_inst.get_nodeattr("in_shape")
-                in_reshaped = f_inst.get_nodeattr("in_reshaped")
+                in_reshaped = f_inst.get_nodeattr("transpose_in_shape")
                 out_shape = f_inst.get_nodeattr("out_shape")
-                out_reshaped = f_inst.get_nodeattr("out_reshaped")
+                out_reshaped = f_inst.get_nodeattr("transpose_out_shape")
                 data_type = f_inst.get_nodeattr("data_type")
                 perm = f_inst.get_nodeattr("perm")
                 simd = f_inst.get_nodeattr("SIMD")
@@ -456,10 +456,10 @@ class InferInnerOuterShuffles(Transformation):
                         domain="finn.custom_op.fpgadataflow",
                         backend="fpgadataflow",
                         in_shape=in_shape,
-                        in_reshaped=in_reshaped,
+                        transpose_in_shape=in_reshaped,
                         perm=perm,
                         out_shape=out_shape,
-                        out_reshaped=out_reshaped,
+                        transpose_out_shape=out_reshaped,
                         data_type=data_type,
                         name=f"OuterShuffle_{node.name}",
                         loop_coeffs=shuffle_perfect_loopnest_coeffs(shape=in_reshaped, perm=perm),

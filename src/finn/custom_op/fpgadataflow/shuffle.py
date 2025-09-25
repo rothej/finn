@@ -22,11 +22,42 @@ class Shuffle(HWCustomOp):
         super().__init__(onnx_node, **kwargs)
 
     def get_nodeattr_types(self):
+        """
+    The attributes for the Shuffle node capture the 
+    optional reshapes either side of the transpose.
+    Below is a diagram indicating what tensors the
+    attribute names are referring to.
+                                   
+          │ in_shape               
+          │                        
+          │                        
+    ┌─────▼──────┐                 
+    │            │                 
+    │ Reshape    │                 
+    │            │                 
+    └─────┬──────┘                 
+          │                        
+          │ transpose_in_shape     
+    ┌─────▼──────┐                 
+    │            │                 
+    │  Transpose │                 
+    │            │                 
+    └─────┬──────┘                 
+          │  transpose_out_shape   
+    ┌─────▼──────┐                 
+    │            │                 
+    │  Reshape   │                 
+    │            │                 
+    └─────┬──────┘                 
+          │                        
+          │  out_shape             
+          ▼                        
+        """
         my_attrs = {
             "data_type": ("s", True, ""),
-            "in_reshaped": ("ints", True, []),
+            "transpose_in_shape": ("ints", True, []),
             "in_shape": ("ints", True, []),
-            "out_reshaped": ("ints", True, []),
+            "transpose_out_shape": ("ints", True, []),
             "out_shape": ("ints", True, []),
             "perm": ("ints", True, []),
             "SIMD": ("i", False, 1),
@@ -36,17 +67,17 @@ class Shuffle(HWCustomOp):
         return my_attrs
 
     def get_normal_input_shape(self, ind=0):
-        return self.get_nodeattr("in_reshaped")
+        return self.get_nodeattr("in_shape")
 
     def get_normal_output_shape(self, ind=0):
-        return self.get_nodeattr("out_reshaped")
+        return self.get_nodeattr("out_shape")
 
     def execute_node(self, context, graph):
         node = self.onnx_node
         input_data = context[node.input[0]]
-        input_reshaped = input_data.reshape(self.get_nodeattr("in_reshaped"))
+        input_reshaped = input_data.reshape(self.get_nodeattr("transpose_in_shape"))
         transposed = np.transpose(input_reshaped, axes=self.get_nodeattr("perm"))
-        output_reshaped = transposed.reshape(self.get_nodeattr("out_reshaped"))
+        output_reshaped = transposed.reshape(self.get_nodeattr("out_shape"))
         context[node.output[0]] = output_reshaped
 
     def get_input_datatype(self, ind=0):

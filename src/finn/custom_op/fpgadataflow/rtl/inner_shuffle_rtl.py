@@ -52,9 +52,6 @@ class InnerShuffle_rtl(InnerShuffle, RTLBackend):
         I_dim = self.get_nodeattr("in_shape")[-2]
         SIMD = self.get_nodeattr("SIMD")
         if I_dim % SIMD != 0:
-            # Not sure if this is the correct approach
-            # we could autosize SIMD to the next biggest value that works.
-            # rather than raising an error straight away
             new_simd = auto_size_simd(I_dim, SIMD)
             if new_simd is not None:
                 self.set_nodeattr("SIMD", new_simd)

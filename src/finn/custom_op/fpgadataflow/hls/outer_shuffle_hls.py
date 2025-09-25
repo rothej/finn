@@ -46,12 +46,9 @@ class OuterShuffle_hls(OuterShuffle, HLSBackend):
         super().__init__(onnx_node, **kwargs)
 
         # check some constraints that it is a legal shuffle_hls
-        last_dim = self.get_nodeattr("in_shape")[-1]
+        last_dim = self.get_nodeattr("transpose_in_shape")[-1]
         SIMD = self.get_nodeattr("SIMD")
         if last_dim % SIMD != 0:
-            # Not sure if this is the correct approach
-            # we could autosize SIMD to the next biggest value that works.
-            # rather than raising an error straight away
             new_simd = auto_size_simd(last_dim, SIMD)
             if new_simd is not None:
                 self.set_nodeattr("SIMD", new_simd)
@@ -81,13 +78,13 @@ class OuterShuffle_hls(OuterShuffle, HLSBackend):
         ]
 
     def get_exp_cycles(self):
-        out_shape = self.get_nodeattr("out_shape")
+        out_shape = self.get_nodeattr("transpose_out_shape")
         simd = self.get_nodeattr("SIMD")
         return int(np.prod(out_shape) / simd)
 
     def docompute(self):
         simd = self.get_nodeattr("SIMD")
-        out_shape = self.get_nodeattr("out_shape")
+        out_shape = self.get_nodeattr("transpose_out_shape")
         out_shape[-1] = int(out_shape[-1] / simd)
         loop_coeffs = [1 if x == 1 else int(x / simd) for x in self.get_nodeattr("loop_coeffs")]
         interleaved = [int(item) for pair in zip(out_shape, loop_coeffs) for item in pair]
