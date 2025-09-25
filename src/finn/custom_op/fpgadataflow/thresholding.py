@@ -125,10 +125,9 @@ class Thresholding(HWCustomOp):
         "Minimize threshold width ('accumulator width' here due to convention)"
         thresholds = model.get_initializer(self.onnx_node.input[1])
         threshold_tensor = self.get_hw_compatible_threshold_tensor(thresholds)
-        if self.get_input_datatype(0) == DataType["FLOAT32"]:
-            # special case: if input is float, we keep thresholds as float
-            tdt = DataType["FLOAT32"]
-        else:
+        # TODO: extend this for fixed point
+        if self.get_input_datatype(0).is_integer():
+            # minimize threshold width only if input is an integer
             min_threshold = thresholds.min()
             max_threshold = thresholds.max()
             min_input = self.get_input_datatype(0).min()
@@ -143,6 +142,9 @@ class Thresholding(HWCustomOp):
                     tdt = DataType.get_smallest_possible(-tdt_max - 1)
             else:
                 tdt = DataType.get_smallest_possible(tdt_max)
+        else:
+            # special case: if input is float, we keep thresholds as is
+            tdt = self.get_input_datatype(1)
         assert np.vectorize(tdt.allowed)(
             threshold_tensor
         ).all(), "Thresholds can't be expressed with type %s" % str(tdt)
