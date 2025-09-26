@@ -320,11 +320,13 @@ class ShuffleDecomposition(Transformation):
 
             perm = self.get_perm(node)
             f_inst = getCustomOp(node)
-            in_shape = f_inst.get_nodeattr("transpose_in_shape")
+            orig_in_shape = f_inst.get_nodeattr("in_shape")
+            in_shape = orig_in_shape
+            transpose_in_shape = f_inst.get_nodeattr("transpose_in_shape")
             simd = f_inst.get_nodeattr("SIMD")
 
             try:
-                P_list, operation_types = decompose_transpose_with_constraints(perm, in_shape, simd)
+                P_list, operation_types = decompose_transpose_with_constraints(perm, transpose_in_shape, simd)
                 if len(P_list) == 0:
                     print("\tNo swaps necessary (identity permutation).")
                     continue
@@ -348,7 +350,7 @@ class ShuffleDecomposition(Transformation):
             # Create decomposed transposes using hardware-constrained operations
             for step_idx, (P, op_type) in enumerate(zip(P_list, operation_types), start=1):
                 step_name = self._unique(f"{node.name}_{op_type}_step{step_idx}")
-                out_shape = itemgetter(*P)(in_shape)
+                out_shape = itemgetter(*P)(transpose_in_shape)
                 if step_idx < len(P_list):
                     out_tensor = self._unique(f"{node.output[0]}_step{step_idx}")
                     out_reshaped = out_shape
@@ -356,6 +358,11 @@ class ShuffleDecomposition(Transformation):
                     out_tensor = orig_output[0]
                     out_reshaped = orig_out_shape
 
+                if step_idx == 1:
+                    in_shape = orig_in_shape
+                else:
+                    in_shape = transpose_in_shape
+                
                 perm_attr = helper.make_attribute("perm", P)
                 transpose_node = helper.make_node(
                     op_type="Shuffle",
@@ -363,7 +370,7 @@ class ShuffleDecomposition(Transformation):
                     inputs=[prev_tensor],
                     outputs=[out_tensor],
                     in_shape=in_shape,
-                    transpose_in_shape=in_shape,
+                    transpose_in_shape=transpose_in_shape,
                     transpose_out_shape=out_shape,
                     out_shape=out_reshaped,
                     SIMD=f_inst.get_nodeattr("SIMD"),
@@ -373,7 +380,7 @@ class ShuffleDecomposition(Transformation):
                 transpose_node.attribute.extend([perm_attr])
                 new_nodes.append(transpose_node)
                 prev_tensor = out_tensor
-                in_shape = out_shape
+                transpose_in_shape = out_shape
 
             for nnode in new_nodes:
                 g.node.append(nnode)
