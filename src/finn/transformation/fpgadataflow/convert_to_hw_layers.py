@@ -1765,9 +1765,7 @@ class InferShuffle(Transformation):
     def apply(self, model):
         graph = model.graph
         graph_modified = False
-        node_ind = 0
-        for n in graph.node:
-            node_ind += 1  # Do I really need to track this? Isn't there a better way?
+        for node_ind, n in enumerate(graph.node, start=1):
             if n.op_type == "Transpose":
                 to_remove = [n]
 
@@ -1873,7 +1871,7 @@ class InferShuffle(Transformation):
                 for i in to_remove:
                     graph.node.remove(
                         i
-                    )  # Is this okay to do while iterating? (QuantSoftMax does...)
+                    ) 
                 graph_modified = True
 
         if graph_modified:
