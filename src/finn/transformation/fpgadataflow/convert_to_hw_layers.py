@@ -1786,7 +1786,6 @@ class InferShuffle(Transformation):
                         in_shape = model.get_tensor_shape(new_in_tensor)
                         in_reshaped = model.get_tensor_shape(n.input[0])
                         to_remove.append(producer)
-                        node_ind -= 1
 
                 new_out_tensor = n.output[0]
                 out_shape = model.get_tensor_shape(new_out_tensor)
@@ -1800,7 +1799,6 @@ class InferShuffle(Transformation):
                         out_shape = model.get_tensor_shape(n.output[0])
                         out_reshaped = model.get_tensor_shape(new_out_tensor)
                         to_remove.append(consumer)
-                        node_ind -= 1
 
                 # Handle None shapes (shape inference might have failed)
                 if in_reshaped is None:
