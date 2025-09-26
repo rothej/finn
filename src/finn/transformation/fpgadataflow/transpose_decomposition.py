@@ -1,3 +1,12 @@
+############################################################################
+# Copyright (C) 2025, Advanced Micro Devices, Inc.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# @author       Shane T. Fleming <shane.fleming@amd.com>
+############################################################################
+import numpy as np
 from collections import deque
 from onnx import helper
 from operator import itemgetter
@@ -7,9 +16,16 @@ from qonnx.transformation.infer_datatypes import InferDataTypes
 from qonnx.transformation.infer_shapes import InferShapes
 from typing import List, Optional, Tuple
 
-from finn.transformation.fpgadataflow.shuffle_helpers import (
-    shuffle_perfect_loopnest_coeffs,
-)
+
+def shuffle_perfect_loopnest_coeffs(shape: tuple[int], perm: tuple[int]) -> tuple[int]:
+    """
+    Given an input shape and permutation matrix calculate the
+    coefficients for the perfect loop nest for HLS generation.
+    """
+    adjusted_shape = list(shape) + [1]
+    input_coeffs = [np.prod(adjusted_shape[i + 1 :]) for i in range(len(shape))]
+    out_coeffs = [input_coeffs[i] for i in perm]
+    return tuple(out_coeffs)
 
 
 def apply_inner_shuffle_operation(
@@ -326,7 +342,9 @@ class ShuffleDecomposition(Transformation):
             simd = f_inst.get_nodeattr("SIMD")
 
             try:
-                P_list, operation_types = decompose_transpose_with_constraints(perm, transpose_in_shape, simd)
+                P_list, operation_types = decompose_transpose_with_constraints(
+                    perm, transpose_in_shape, simd
+                )
                 if len(P_list) == 0:
                     print("\tNo swaps necessary (identity permutation).")
                     continue
@@ -362,7 +380,7 @@ class ShuffleDecomposition(Transformation):
                     in_shape = orig_in_shape
                 else:
                     in_shape = transpose_in_shape
-                
+
                 perm_attr = helper.make_attribute("perm", P)
                 transpose_node = helper.make_node(
                     op_type="Shuffle",

@@ -2,7 +2,7 @@
 # Copyright (C) 2025, Advanced Micro Devices, Inc.
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: BSD-3-Clause
 #
 # @author       Shane T. Fleming <shane.fleming@amd.com>
 ############################################################################
@@ -23,35 +23,35 @@ class Shuffle(HWCustomOp):
 
     def get_nodeattr_types(self):
         """
-    The attributes for the Shuffle node capture the 
-    optional reshapes either side of the transpose.
-    Below is a diagram indicating what tensors the
-    attribute names are referring to.
-                                   
-          │ in_shape               
-          │                        
-          │                        
-    ┌─────▼──────┐                 
-    │            │                 
-    │ Reshape    │                 
-    │            │                 
-    └─────┬──────┘                 
-          │                        
-          │ transpose_in_shape     
-    ┌─────▼──────┐                 
-    │            │                 
-    │  Transpose │                 
-    │            │                 
-    └─────┬──────┘                 
-          │  transpose_out_shape   
-    ┌─────▼──────┐                 
-    │            │                 
-    │  Reshape   │                 
-    │            │                 
-    └─────┬──────┘                 
-          │                        
-          │  out_shape             
-          ▼                        
+        The attributes for the Shuffle node capture the
+        optional reshapes either side of the transpose.
+        Below is a diagram indicating what tensors the
+        attribute names are referring to.
+
+              │ in_shape
+              │
+              │
+        ┌─────▼──────┐
+        │            │
+        │ Reshape    │
+        │            │
+        └─────┬──────┘
+              │
+              │ transpose_in_shape
+        ┌─────▼──────┐
+        │            │
+        │  Transpose │
+        │            │
+        └─────┬──────┘
+              │  transpose_out_shape
+        ┌─────▼──────┐
+        │            │
+        │  Reshape   │
+        │            │
+        └─────┬──────┘
+              │
+              │  out_shape
+              ▼
         """
         my_attrs = {
             "data_type": ("s", True, ""),

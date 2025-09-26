@@ -2,7 +2,7 @@
 # Copyright (C) 2025, Advanced Micro Devices, Inc.
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: BSD-3-Clause
 #
 # @author       Shane T. Fleming <shane.fleming@amd.com>
 ############################################################################
@@ -96,7 +96,7 @@ class OuterShuffle(HWCustomOp):
 
     def get_folded_output_shape(self, ind=0):
         normal_oshape = list(self.get_normal_output_shape())
-        simd = self.get_nodeattr("SIMD" ) 
+        simd = self.get_nodeattr("SIMD")
         assert normal_oshape[-1] % simd == 0, "SIMD must divide into the innermost output dimension"
         fold = int(normal_oshape[-1] / simd)
         folded_oshape = normal_oshape[:-1] + [fold, simd]
@@ -104,7 +104,7 @@ class OuterShuffle(HWCustomOp):
 
     def get_folded_input_shape(self, ind=0):
         normal_ishape = list(self.get_normal_input_shape())
-        simd = self.get_nodeattr("SIMD") 
+        simd = self.get_nodeattr("SIMD")
         assert normal_ishape[-1] % simd == 0, "SIMD must divide into the innermost input dimension"
         fold = int(normal_ishape[-1] / simd)
         folded_ishape = normal_ishape[:-1] + [fold, simd]

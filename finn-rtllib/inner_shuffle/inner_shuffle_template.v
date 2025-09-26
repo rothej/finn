@@ -2,7 +2,7 @@
 * Copyright (C) 2025, Advanced Micro Devices, Inc.
 * All rights reserved.
 *
-* SPDX-License-Identifier: MIT
+* SPDX-License-Identifier: BSD-3-Clause
 
 * @author       Shane T. Fleming <shane.fleming@amd.com>
 ****************************************************************************/
