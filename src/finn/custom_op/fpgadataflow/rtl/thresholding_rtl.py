@@ -164,7 +164,16 @@ class Thresholding_rtl(Thresholding, RTLBackend):
         pe = self.get_nodeattr("PE")
         num_channels = self.get_nodeattr("NumChannels")  # number of channels
         n_thres_steps = self.get_nodeattr("numSteps")
+        idt = DataType[input_data_type]
         wdt = self.get_input_datatype(1)
+
+        if idt.is_integer() and not wdt.is_integer():
+            raise ValueError(
+                "Thresholds must be converted to integers for integer inputs "
+                "using RoundAndClipThresholds transform before code generation."
+            )
+        if not idt.is_integer() and wdt.is_integer():
+            raise ValueError("Floating-point inputs and integer thresholds are not supported.")
 
         # If a single threshold value is found, set num_channels to PE
         thresholds = model.get_initializer(self.onnx_node.input[1])
@@ -179,7 +188,7 @@ class Thresholding_rtl(Thresholding, RTLBackend):
         code_gen_dict["$TOP_MODULE$"] = code_gen_dict["$MODULE_NAME_AXI_WRAPPER$"]
 
         # Identify the module variables
-        i_bitwidth = DataType[input_data_type].bitwidth()
+        i_bitwidth = idt.bitwidth()
 
         code_gen_dict["$N$"] = [str(n_thres_steps)]  # number of needed thresholds
         code_gen_dict["$WT$"] = [
@@ -196,6 +205,12 @@ class Thresholding_rtl(Thresholding, RTLBackend):
             code_gen_dict["$SIGNED$"] = [str(1)]
         else:
             code_gen_dict["$SIGNED$"] = [str(0)]
+
+        # Is the input datatype floating-point?
+        if self.get_input_datatype(0) in ["FLOAT32", "FLOAT16"]:
+            code_gen_dict["$FPARG$"] = [str(1)]
+        else:
+            code_gen_dict["$FPARG$"] = [str(0)]
 
         if bias >= 0:
             o_bits = math.ceil(math.log2(n_thres_steps + bias + 1))
@@ -286,10 +301,11 @@ class Thresholding_rtl(Thresholding, RTLBackend):
                 # it is assumed that the first input of the node is the data input
                 # the second input are the thresholds
                 if in_ind == 0:
-                    assert (
-                        str(context[inputs].dtype) == "float32"
-                    ), """Input datatype is
-                    not float32 as expected."""
+                    assert str(context[inputs].dtype) in [
+                        "float32",
+                        "float16",
+                    ], """Input datatype is
+                    not float32 or float16 as expected."""
                     expected_inp_shape = self.get_folded_input_shape()
                     reshaped_input = context[inputs].reshape(expected_inp_shape)
 
