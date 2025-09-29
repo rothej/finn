@@ -1868,9 +1868,7 @@ class InferShuffle(Transformation):
                 graph.node.insert(node_ind, new_node)
 
                 for i in to_remove:
-                    graph.node.remove(
-                        i
-                    ) 
+                    graph.node.remove(i)
                 graph_modified = True
 
         if graph_modified:
