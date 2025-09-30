@@ -30,6 +30,7 @@
   */
 
 module $MODULE_NAME$_memstream_wrapper #(
+        parameter  SETS = $SETS$,
 	parameter  DEPTH = $DEPTH$,
 	parameter  WIDTH = $WIDTH$,
 
@@ -81,6 +82,7 @@ module $MODULE_NAME$_memstream_wrapper #(
 );
 
 	memstream_axi #(
+                .SETS(SETS),
 		.DEPTH(DEPTH), .WIDTH(WIDTH),
 		.INIT_FILE(INIT_FILE),
 		.RAM_STYLE(RAM_STYLE),
