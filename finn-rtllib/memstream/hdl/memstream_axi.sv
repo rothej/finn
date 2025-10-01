@@ -241,7 +241,7 @@ module memstream_axi #(
 			assign	s_axis_0_tready = !IVld;
 		end : blkSetSelIn
 
-		// Assemble two consecutive stream outputs into 
+		// Assemble two consecutive stream outputs into
 		if(1) begin : blkStreamOut
 			logic [3:0][WIDTH_EFF-1:0]  SBuf = 'x;
 			logic [2:0]  SCnt = 0;	// 0..4
