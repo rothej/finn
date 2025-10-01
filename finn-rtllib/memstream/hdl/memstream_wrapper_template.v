@@ -38,7 +38,8 @@ module $MODULE_NAME$_memstream_wrapper #(
 	parameter  RAM_STYLE = "$RAM_STYLE$",
 	parameter  PUMPED_MEMORY = $PUMPED_MEMORY$,
 
-	parameter  AXILITE_ADDR_WIDTH = $clog2(DEPTH * (2**$clog2((WIDTH+31)/32))) + 2
+	parameter  AXILITE_ADDR_WIDTH = $clog2(DEPTH * (2**$clog2((WIDTH+31)/32))) + 2,
+        parameter  SET_BITS = SETS > 2? $clog2(SETS) : 1
 )(
 	// Global Control
 	(* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF s_axilite:s_axis_0:m_axis_0, ASSOCIATED_RESET ap_rst_n" *)
