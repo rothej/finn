@@ -31,7 +31,7 @@
  */
 
 module memstream #(
-	int unsigned  SETS = 1,
+	int unsigned  SETS,
 	int unsigned  DEPTH,
 	int unsigned  WIDTH,
 
