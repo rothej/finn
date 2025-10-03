@@ -394,6 +394,8 @@ class ShuffleDecomposition(Transformation):
                     SIMD=f_inst.get_nodeattr("SIMD"),
                     data_type=f_inst.get_nodeattr("data_type"),
                     name=step_name,
+                    original_node_name=node.name,  # Track original shuffle name
+                    original_simd=f_inst.get_nodeattr("SIMD"),  # Track original SIMD
                 )
                 transpose_node.attribute.extend([perm_attr])
                 new_nodes.append(transpose_node)
@@ -459,6 +461,13 @@ class InferInnerOuterShuffles(Transformation):
                 simd = f_inst.get_nodeattr("SIMD")
 
                 if _is_inner_shuffle(perm, in_shape):
+                    # Get original node name if it exists, otherwise use current node name
+                    try:
+                        original_name = f_inst.get_nodeattr("original_node_name") or node.name
+                        original_simd = f_inst.get_nodeattr("original_simd") or simd
+                    except (AttributeError, KeyError):
+                        original_name = node.name
+                        original_simd = simd
                     new_node = helper.make_node(
                         "InnerShuffle",
                         [new_in_tensor],
@@ -469,11 +478,20 @@ class InferInnerOuterShuffles(Transformation):
                         data_type=data_type,
                         perm=perm,
                         name=f"InnerShuffle_{node.name}",
+                        original_node_name=original_name,  # Preserve original shuffle name
+                        original_simd=original_simd,  # Preserve original SIMD
                         SIMD=simd,
                         I=in_shape[-2],  # Second to last dim
                         J=in_shape[-1],  # Last dim
                     )
                 else:
+                    # Get original node name if it exists, otherwise use current node name
+                    try:
+                        original_name = f_inst.get_nodeattr("original_node_name") or node.name
+                        original_simd = f_inst.get_nodeattr("original_simd") or simd
+                    except (AttributeError, KeyError):
+                        original_name = node.name
+                        original_simd = simd
                     new_node = helper.make_node(
                         "OuterShuffle",
                         [new_in_tensor],
@@ -487,6 +505,8 @@ class InferInnerOuterShuffles(Transformation):
                         transpose_out_shape=out_reshaped,
                         data_type=data_type,
                         name=f"OuterShuffle_{node.name}",
+                        original_node_name=original_name,  # Preserve original shuffle name
+                        original_simd=original_simd,  # Preserve original SIMD
                         loop_coeffs=shuffle_perfect_loopnest_coeffs(shape=in_reshaped, perm=perm),
                         SIMD=simd,
                         NumChannels=in_reshaped[-1],

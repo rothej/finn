@@ -610,3 +610,93 @@ def test_stitched_ip_shuffle_layer(shuffle_sip_param, datatype, simd):
     vivado_stitch_proj_dir = model.get_metadata_prop("vivado_stitch_proj")
     assert vivado_stitch_proj_dir is not None, "Stitched IP project was not created"
     assert os.path.isdir(vivado_stitch_proj_dir), "Stitched IP project directory does not exist"
+
+
+def test_shuffle_config_consolidation():
+    import json
+    import tempfile
+    from qonnx.util.config import extract_model_config_to_json
+
+    dt = DataType["INT8"]
+    model = construct_onnx_model(
+        input_shape=(32, 16, 8, 12),
+        transpose_perm=(2, 3, 0, 1),
+        reshape1_shape=None,
+        reshape2_shape=None,
+        dt=dt,
+    )
+
+    model = model.transform(InferShuffle())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+    model = model.transform(SetShuffleSIMD(4))
+
+    original_shuffle_name = None
+    for node in model.graph.node:
+        if node.op_type == "Shuffle" and "finn.custom_op.fpgadataflow" in node.domain:
+            original_shuffle_name = node.name
+            break
+
+    model = model.transform(ShuffleDecomposition())
+    model = model.transform(InferInnerOuterShuffles())
+
+    decomposed_nodes = []
+    for node in model.graph.node:
+        if (
+            node.op_type in ["InnerShuffle", "OuterShuffle"]
+            and "finn.custom_op.fpgadataflow" in node.domain
+        ):
+            decomposed_nodes.append(node.name)
+            for attr in node.attribute:
+                if attr.name == "original_node_name":
+                    orig_name = attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
+                    assert orig_name == original_shuffle_name
+
+    assert len(decomposed_nodes) > 0
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        config_file = os.path.join(tmp_dir, "test_config.json")
+        extract_model_config_to_json(model, config_file, ["SIMD"])
+
+        def test_consolidate(model, output_file, hw_attrs):
+            extract_model_config_to_json(model, output_file, hw_attrs)
+            with open(output_file, "r") as f:
+                config = json.load(f)
+            shuffle_configs = {}
+            nodes_to_remove = []
+            for node in model.graph.node:
+                if (
+                    node.op_type in ["InnerShuffle", "OuterShuffle"]
+                    and "finn.custom_op.fpgadataflow" in node.domain
+                ):
+                    original_name = None
+                    original_simd = None
+                    for attr in node.attribute:
+                        if attr.name == "original_node_name" and hasattr(attr, "s"):
+                            original_name = (
+                                attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
+                            )
+                        elif attr.name == "original_simd" and hasattr(attr, "i"):
+                            original_simd = attr.i
+                    if original_name and node.name in config:
+                        if original_name not in shuffle_configs:
+                            consolidated_config = config[node.name].copy()
+                            if original_simd is not None:
+                                consolidated_config["SIMD"] = original_simd
+                            shuffle_configs[original_name] = consolidated_config
+                        nodes_to_remove.append(node.name)
+            for node_name in nodes_to_remove:
+                del config[node_name]
+            config.update(shuffle_configs)
+            with open(output_file, "w") as f:
+                json.dump(config, f, indent=2)
+
+        consolidated_file = os.path.join(tmp_dir, "consolidated.json")
+        test_consolidate(model, consolidated_file, ["SIMD"])
+
+        with open(consolidated_file, "r") as f:
+            consolidated_config = json.load(f)
+
+        assert original_shuffle_name in consolidated_config
+        assert consolidated_config[original_shuffle_name]["SIMD"] == 4
+        for decomposed_name in decomposed_nodes:
+            assert decomposed_name not in consolidated_config

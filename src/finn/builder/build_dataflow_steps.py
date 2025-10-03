@@ -638,7 +638,51 @@ def step_set_fifo_depths(model: ModelWrapper, cfg: DataflowBuildConfig):
         "depth_trigger_uram",
         "depth_trigger_bram",
     ]
-    extract_model_config_to_json(model, cfg.output_dir + "/final_hw_config.json", hw_attrs)
+
+    def extract_model_config_consolidate_shuffles(model, output_file, hw_attrs):
+        """Export flow that takes into consideration how Shuffle operations have been decomposed"""
+        extract_model_config_to_json(model, output_file, hw_attrs)
+
+        with open(output_file, "r") as f:
+            config = json.load(f)
+
+        shuffle_configs = {}
+        nodes_to_remove = []
+
+        for node in model.graph.node:
+            if (
+                node.op_type in ["InnerShuffle", "OuterShuffle"]
+                and "finn.custom_op.fpgadataflow" in node.domain
+            ):
+                original_name = None
+                original_simd = None
+                for attr in node.attribute:
+                    if attr.name == "original_node_name" and hasattr(attr, "s"):
+                        original_name = (
+                            attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
+                        )
+                    elif attr.name == "original_simd" and hasattr(attr, "i"):
+                        original_simd = attr.i
+
+                if original_name and node.name in config:
+                    if original_name not in shuffle_configs:
+                        consolidated_config = config[node.name].copy()
+                        if original_simd is not None:
+                            consolidated_config["SIMD"] = original_simd
+                        shuffle_configs[original_name] = consolidated_config
+                    nodes_to_remove.append(node.name)
+
+        for node_name in nodes_to_remove:
+            del config[node_name]
+
+        config.update(shuffle_configs)
+
+        with open(output_file, "w") as f:
+            json.dump(config, f, indent=2)
+
+    extract_model_config_consolidate_shuffles(
+        model, cfg.output_dir + "/final_hw_config.json", hw_attrs
+    )
 
     # perform FIFO splitting and shallow FIFO removal only after the final config
     # json file has been written. otherwise, since these transforms may add/remove

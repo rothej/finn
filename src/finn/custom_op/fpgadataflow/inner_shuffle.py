@@ -25,6 +25,8 @@ class InnerShuffle(HWCustomOp):
             "data_type": ("s", True, ""),
             "in_shape": ("ints", True, []),  # Needs to be len==2 can we assert that somewhere?
             "SIMD": ("i", False, 1),
+            "original_node_name": ("s", False, ""),  # Track original shuffle name for SIMD config
+            "original_simd": ("i", False, 1),  # Track original shuffle SIMD for config export
         }
         my_attrs.update(super().get_nodeattr_types())
         return my_attrs

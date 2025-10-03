@@ -33,6 +33,8 @@ class OuterShuffle(HWCustomOp):
             "perm": ("ints", True, []),
             "SIMD": ("i", False, 1),
             "NumChannels": ("i", False, 128),
+            "original_node_name": ("s", False, ""),  # Track original shuffle name for SIMD config
+            "original_simd": ("i", False, 1),  # Track original shuffle SIMD for config export
         }
         my_attrs.update(super().get_nodeattr_types())
         return my_attrs
