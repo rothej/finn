@@ -8,7 +8,6 @@
 ############################################################################
 import numpy as np
 import warnings
-from onnx.helper import make_node
 from qonnx.core.datatype import DataType
 
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
@@ -52,15 +51,6 @@ class InnerShuffle(HWCustomOp):
         data_type = DataType[self.get_nodeattr("data_type")]
         return data_type
 
-    def make_shape_compatible_op(self, model):
-        in_shape = self.get_normal_input_shape()
-        return make_node(
-            "InnerShuffle",
-            inputs=[self.onnx_node.input[0]],
-            outputs=[self.onnx_node.output[0]],
-            in_shape=list(in_shape),
-        )
-
     def infer_node_datatype(self, model):
         node = self.onnx_node
         dt = model.get_tensor_datatype(node.input[0])
@@ -71,9 +61,6 @@ class InnerShuffle(HWCustomOp):
             warnings.warn(warn_str)
         self.set_nodeattr("data_type", dt.name)
         model.set_tensor_datatype(node.output[0], dt)
-
-    def verify_node(self):
-        raise NotImplementedError("This method is not yet implemented.")
 
     def get_instream_width(self, ind=0):
         ibits = self.get_input_datatype().bitwidth()

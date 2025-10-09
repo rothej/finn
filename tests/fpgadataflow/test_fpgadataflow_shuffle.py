@@ -9,15 +9,16 @@
 
 import pytest
 
+import json
 import numpy as np
 import os
 import tempfile
 import torch
 import torch.onnx
 from brevitas.export import export_qonnx
-from onnx import helper
 from qonnx.core.datatype import DataType
 from qonnx.core.modelwrapper import ModelWrapper
+from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames
 from qonnx.transformation.infer_datatypes import InferDataTypes
@@ -36,11 +37,11 @@ from finn.transformation.fpgadataflow.prepare_ip import PrepareIP
 from finn.transformation.fpgadataflow.prepare_rtlsim import PrepareRTLSim
 from finn.transformation.fpgadataflow.set_exec_mode import SetExecMode
 from finn.transformation.fpgadataflow.specialize_layers import SpecializeLayers
-from finn.transformation.fpgadataflow.synth_ooc import SynthOutOfContext
 from finn.transformation.fpgadataflow.transpose_decomposition import (
     InferInnerOuterShuffles,
     ShuffleDecomposition,
 )
+from finn.util.fpgadataflow import extract_model_config_consolidate_shuffles
 
 test_fpga_part: str = "xcvc1902-vsva2197-2MP-e-S"
 test_synth_clk_period_ns: int = 10
@@ -110,52 +111,12 @@ class SetShuffleSIMD(Transformation):
     def apply(self, model):
         for node in model.graph.node:
             if node.op_type in ["Shuffle"] and "finn.custom_op.fpgadataflow" in node.domain:
-                simd_found = False
-                for attr in node.attribute:
-                    if attr.name == "SIMD":
-                        attr.i = self.simd_value
-                        simd_found = True
-                        break
-                if not simd_found:
-                    simd_attr = helper.make_attribute("SIMD", self.simd_value)
-                    node.attribute.append(simd_attr)
+                inst = getCustomOp(node)
+                inst.set_nodeattr("SIMD", self.simd_value)
 
                 # Enable waveform generation for debugging
                 if self.enable_waveforms:
-                    trace_found = False
-                    for attr in node.attribute:
-                        if attr.name == "rtlsim_trace":
-                            attr.i = "debug.wdb"
-                            trace_found = True
-                            break
-                    if not trace_found:
-                        trace_attr = helper.make_attribute("rtlsim_trace", "debug.wdb")
-                        node.attribute.append(trace_attr)
-        return model, False
-
-
-class SetCppSimExec(Transformation):
-    """Set Exec mode for only HLS nodes"""
-
-    def __init__(self):
-        super().__init__()
-
-    def apply(self, model):
-        for node in model.graph.node:
-            if (
-                node.op_type in ["OuterShuffle_hls"]
-                and "finn.custom_op.fpgadataflow" in node.domain
-            ):
-                exec_mode_found = False
-                for attr in node.attribute:
-                    if attr.name == "exec_mode":
-                        attr.i = "cppsim"
-                        exec_mode_found = True
-                        break
-                if not exec_mode_found:
-                    exec_mode_attr = helper.make_attribute("exec_mode", "cppsim")
-                    node.attribute.append(exec_mode_attr)
-
+                    inst.set_nodeattr("rtlsim_trace", "debug.wdb")
         return model, False
 
 
@@ -237,18 +198,11 @@ def test_cppsim_shuffle_layer(cpp_shuffle_param, datatype, simd):
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
 
-    model = model.transform(SetCppSimExec())
+    model = model.transform(SetExecMode("cppsim"))
     model = model.transform(PrepareCppSim())
     model = model.transform(CompileCppSim())
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
-
-    y_hw_flat = y_hw.flatten()
-    y_ref_flat = y_ref.flatten()
-    for i in range(len(y_hw_flat)):
-        if not np.allclose(y_hw_flat[i], y_ref_flat[i]):
-            print(f"Index {i}, Expected {y_ref_flat[i]} -- Got {y_hw_flat[i]}")
-
     assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
 
 
@@ -513,13 +467,6 @@ def test_rtlsim_shuffle_layer(shuffle_param, datatype, simd):
     model = model.transform(PrepareRTLSim())
 
     y_hw = oxe.execute_onnx(model, input_t)[out_name]
-
-    y_hw_flat = y_hw.flatten()
-    y_ref_flat = y_ref.flatten()
-    for i in range(len(y_hw_flat)):
-        if not np.allclose(y_hw_flat[i], y_ref_flat[i]):
-            print(f"Index {i}, Expected {y_ref_flat[i]} -- Got {y_hw_flat[i]}")
-
     assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
 
 
@@ -589,6 +536,14 @@ def test_stitched_ip_shuffle_layer(shuffle_sip_param, datatype, simd):
         dt=dt,
     )
 
+    input = gen_finn_dt_tensor(dt, in_shape)
+    in_name = model.graph.input[0].name
+    out_name = model.graph.output[0].name
+    input_t = {in_name: input}
+
+    # Get a reference for the shuffle
+    y_ref = oxe.execute_onnx(model, input_t)[out_name]
+
     model = model.transform(InferShuffle())
     model = model.transform(SpecializeLayers(test_fpga_part))
     model = model.transform(SetShuffleSIMD(simd))
@@ -605,18 +560,13 @@ def test_stitched_ip_shuffle_layer(shuffle_sip_param, datatype, simd):
 
     model = model.transform(CreateStitchedIP(test_fpga_part, test_synth_clk_period_ns))
 
-    model = model.transform(SynthOutOfContext(test_fpga_part, test_synth_clk_period_ns))
+    model.set_metadata_prop("exec_mode", "rtlsim")
+    y_hw = oxe.execute_onnx(model, input_t)[out_name]
 
-    vivado_stitch_proj_dir = model.get_metadata_prop("vivado_stitch_proj")
-    assert vivado_stitch_proj_dir is not None, "Stitched IP project was not created"
-    assert os.path.isdir(vivado_stitch_proj_dir), "Stitched IP project directory does not exist"
+    assert np.allclose(y_ref, y_hw), "Model output does not match expected output"
 
 
 def test_shuffle_config_consolidation():
-    import json
-    import tempfile
-    from qonnx.util.config import extract_model_config_to_json
-
     dt = DataType["INT8"]
     model = construct_onnx_model(
         input_shape=(32, 16, 8, 12),
@@ -638,65 +588,25 @@ def test_shuffle_config_consolidation():
 
     model = model.transform(ShuffleDecomposition())
     model = model.transform(InferInnerOuterShuffles())
+    model = model.transform(SpecializeLayers(test_fpga_part))
+    model = model.transform(GiveUniqueNodeNames())
 
     decomposed_nodes = []
     for node in model.graph.node:
-        if (
-            node.op_type in ["InnerShuffle", "OuterShuffle"]
-            and "finn.custom_op.fpgadataflow" in node.domain
-        ):
+        if node.op_type in ["InnerShuffle_rtl", "OuterShuffle_hls"]:
             decomposed_nodes.append(node.name)
-            for attr in node.attribute:
-                if attr.name == "original_node_name":
-                    orig_name = attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
-                    assert orig_name == original_shuffle_name
+            orig_name = getCustomOp(node).get_nodeattr("original_node_name")
+            assert orig_name == original_shuffle_name
 
     assert len(decomposed_nodes) > 0
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        config_file = os.path.join(tmp_dir, "test_config.json")
-        extract_model_config_to_json(model, config_file, ["SIMD"])
+    consolidated_file = os.environ["FINN_BUILD_DIR"] + "/consolidated.json"
+    extract_model_config_consolidate_shuffles(model, consolidated_file, ["SIMD"])
 
-        def test_consolidate(model, output_file, hw_attrs):
-            extract_model_config_to_json(model, output_file, hw_attrs)
-            with open(output_file, "r") as f:
-                config = json.load(f)
-            shuffle_configs = {}
-            nodes_to_remove = []
-            for node in model.graph.node:
-                if (
-                    node.op_type in ["InnerShuffle", "OuterShuffle"]
-                    and "finn.custom_op.fpgadataflow" in node.domain
-                ):
-                    original_name = None
-                    original_simd = None
-                    for attr in node.attribute:
-                        if attr.name == "original_node_name" and hasattr(attr, "s"):
-                            original_name = (
-                                attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
-                            )
-                        elif attr.name == "original_simd" and hasattr(attr, "i"):
-                            original_simd = attr.i
-                    if original_name and node.name in config:
-                        if original_name not in shuffle_configs:
-                            consolidated_config = config[node.name].copy()
-                            if original_simd is not None:
-                                consolidated_config["SIMD"] = original_simd
-                            shuffle_configs[original_name] = consolidated_config
-                        nodes_to_remove.append(node.name)
-            for node_name in nodes_to_remove:
-                del config[node_name]
-            config.update(shuffle_configs)
-            with open(output_file, "w") as f:
-                json.dump(config, f, indent=2)
+    with open(consolidated_file, "r") as f:
+        consolidated_config = json.load(f)
 
-        consolidated_file = os.path.join(tmp_dir, "consolidated.json")
-        test_consolidate(model, consolidated_file, ["SIMD"])
-
-        with open(consolidated_file, "r") as f:
-            consolidated_config = json.load(f)
-
-        assert original_shuffle_name in consolidated_config
-        assert consolidated_config[original_shuffle_name]["SIMD"] == 4
-        for decomposed_name in decomposed_nodes:
-            assert decomposed_name not in consolidated_config
+    assert original_shuffle_name in consolidated_config
+    assert consolidated_config[original_shuffle_name]["SIMD"] == 4
+    for decomposed_name in decomposed_nodes:
+        assert decomposed_name not in consolidated_config

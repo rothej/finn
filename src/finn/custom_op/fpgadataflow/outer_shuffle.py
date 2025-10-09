@@ -9,7 +9,6 @@
 
 import numpy as np
 import warnings
-from onnx.helper import make_node
 from qonnx.core.datatype import DataType
 
 from finn.custom_op.fpgadataflow.hwcustomop import HWCustomOp
@@ -56,17 +55,6 @@ class OuterShuffle(HWCustomOp):
     def get_input_datatype(self, ind=0):
         data_type = DataType[self.get_nodeattr("data_type")]
         return data_type
-
-    def make_shape_compatible_op(self, model):
-        in_shape = self.get_normal_input_shape()
-        out_shape = self.get_normal_output_shape()
-        return make_node(
-            "OuterShuffle",
-            inputs=[self.onnx_node.input[0]],
-            outputs=[self.onnx_node.output[0]],
-            in_shape=list(in_shape),
-            out_shape=list(out_shape),
-        )
 
     def infer_node_datatype(self, model):
         node = self.onnx_node
