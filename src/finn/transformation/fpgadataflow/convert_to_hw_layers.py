@@ -1802,22 +1802,14 @@ class InferShuffle(Transformation):
                         to_remove.append(consumer)
 
                 # Handle None shapes (shape inference might have failed)
-                if in_reshaped is None:
-                    print(
-                        f"""
-                        Warning: Could not infer shape for tensor {n.input[0]},
-                        Skipping node {n.name}
-                        """
-                    )
-                    continue
-                if out_reshaped is None:
-                    print(
-                        f"""
-                        Warning: Could not infer shape for tensor {new_out_tensor},
-                        Skipping node {n.name}
-                        """
-                    )
-                    continue
+                assert (
+                    in_reshaped is not None
+                ), f"""Could not infer shape for tensor {n.input[0]}.
+                    Please run InferShapes first"""
+                assert (
+                    out_reshaped is not None
+                ), f"""Could not infer shape for tensor {new_out_tensor}.
+                    Please run InferShapes first"""
 
                 idt = model.get_tensor_datatype(new_in_tensor)
                 odt = model.get_tensor_datatype(new_out_tensor)

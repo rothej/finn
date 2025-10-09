@@ -86,10 +86,6 @@ class Shuffle(HWCustomOp):
         data_type = DataType[self.get_nodeattr("data_type")]
         return data_type
 
-    def make_shape_compatible_op(self, model):
-        oshape = self.get_normal_output_shape()
-        return super().make_const_shape_op(oshape)
-
     def infer_node_datatype(self, model):
         node = self.onnx_node
         dt = model.get_tensor_datatype(node.input[0])
