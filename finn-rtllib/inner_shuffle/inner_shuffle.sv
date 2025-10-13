@@ -75,11 +75,11 @@ module mem_bank #(
 	input  logic rd_hold
 );
 
-	(* ram_style="block" *) logic [WIDTH-1:0] mem [DEPTH-1:0]; // The Mem for this bank
+	(* ram_style="block" *) logic [WIDTH-1:0] Mem [DEPTH-1:0]; // The Mem for this bank
 
 	// Write channel
 	always_ff @(posedge clk)
-		if (wr_en) mem[wr_addr] <= d_in;
+		if (wr_en) Mem[wr_addr] <= d_in;
 
 	// Read channel
 	always_ff @(posedge clk)
@@ -87,7 +87,7 @@ module mem_bank #(
 			d_out <= 'd0;
 		else
 			if(!rd_hold)
-				d_out <= mem[rd_addr];
+				d_out <= Mem[rd_addr];
 endmodule
 
 
@@ -164,12 +164,12 @@ module inner_shuffle #(
 			rd_pat_1[i] = ( rd_pat_0[i] + 1 )%SIMD;
 		end
 
-    		// Calculate permutation indices
+		// Calculate permutation indices
 		foreach (rd_pat_0[i])
-      			foreach (rd_pat_1[j])
-        			if (rd_pat_0[i] == rd_pat_1[j]) begin
-          				perm_pattern[i] = j;
-          				break;
+			foreach (rd_pat_1[j])
+				if (rd_pat_0[i] == rd_pat_1[j]) begin
+					perm_pattern[i] = j;
+					break;
 				end
 		return perm_pattern;
 	endfunction : generate_rd_permutation_pattern
@@ -181,11 +181,11 @@ module inner_shuffle #(
 	// --------------------------------------------------------------------------
 	//   Memory Banks
 	// --------------------------------------------------------------------------
-	logic osb_vld; // output skidbuffer valid signal
-	logic osb_vld_d; // output skidbuffer valid signal
-	logic osb_rdy; // output skid buffer ready signal
+	logic OsbVld; // output skidbuffer valid signal
+	logic OsbVldD; // output skidbuffer valid signal
+	logic OsbRdy; // output skid buffer ready signal
 
-	localparam int unsigned BANK_DEPTH  = 2*(I*J/SIMD);
+	localparam int unsigned BANK_DEPTH = 2*(I*J/SIMD);
 	localparam int unsigned PAGE_OFFSET =   (I*J)/SIMD;
 
 	// Instantiate separate banks
@@ -208,7 +208,7 @@ module inner_shuffle #(
 			.wr_en(irdy && ivld),
 			.d_out(mem_banks_out[i]),
 			.rd_addr(mem_banks_rd_addr[i]),
-			.rd_hold(!osb_rdy)
+			.rd_hold(!OsbRdy)
 		);
 	end : gen_mem_banks
 
@@ -220,7 +220,7 @@ module inner_shuffle #(
 	// This is reset every SIMD rows written
 	always_comb begin : writeBankScheduleRotation
 		// Reset the write bank allocation after SIMD Rows
-		if (wr_bank_reset == J-1)
+		if (WrBankReset == J-1)
 			for(int unsigned i=0; i<SIMD; i++) next_wr_bank_schedule[i] = i;
 		else begin
 			next_wr_bank_schedule [SIMD-1] = wr_bank_schedule[0];
@@ -237,64 +237,64 @@ module inner_shuffle #(
 	end
 
 	// Write bank schedule rotation logic
-	logic[$clog2(WR_ROT_PERIOD)-1:0] wr_rot_counter;
-	logic[$clog2(I*J/SIMD)-1:0]      wr_counter;
+	logic[$clog2(WR_ROT_PERIOD)-1:0] WrRotCounter;
+	logic[$clog2(I*J/SIMD)-1:0]      WrCounter;
 
 	// Bank schedule reset (Resets the bank write after SIMD*I elements written)
-	logic[$clog2(J)-1:0]      	 wr_bank_reset;
+	logic[$clog2(J)-1:0]      	 WrBankReset;
 
 	always_ff @(posedge clk) begin
 		if (rst) begin
 			for(int unsigned i=0; i<SIMD; i++) wr_bank_schedule[i] <= i;
-			wr_rot_counter <= 'd0;
-			wr_counter <= 'd0;
-			wr_bank_reset <= 'd0;
+			WrRotCounter <= 'd0;
+			WrCounter <= 'd0;
+			WrBankReset <= 'd0;
 		end
 		else
 			if (ivld && irdy) begin // Detect once we need to rotate and perform right rotation
 
-				if(wr_bank_reset == J-1)
-					wr_bank_reset <= 'd0;
+				if(WrBankReset == J-1)
+					WrBankReset <= 'd0;
 				else
-					wr_bank_reset <= wr_bank_reset + 'd1;
+					WrBankReset <= WrBankReset + 'd1;
 
-				if (wr_rot_counter == WR_ROT_PERIOD - 1) begin
-					wr_rot_counter <= 'd0;
-					if (wr_counter == (I*J/SIMD - 1))
-						wr_counter <= 'd0;
+				if (WrRotCounter == WR_ROT_PERIOD - 1) begin
+					WrRotCounter <= 'd0;
+					if (WrCounter == (I*J/SIMD - 1))
+						WrCounter <= 'd0;
 					for (int unsigned i = 0; i < SIMD; i++) wr_bank_schedule[i] <= next_wr_bank_schedule[i];
 				end
 				else begin
-					wr_rot_counter <= wr_rot_counter + 'd1;
-					wr_counter <= wr_counter + 'd1;
+					WrRotCounter <= WrRotCounter + 'd1;
+					WrCounter <= WrCounter + 'd1;
 				end
 			end
 	end
 
 	// Job tracking and bank page locking
-	logic [1:0] wr_jobs_done; // Bit vector tracking when writes have been completed to pages
-	logic rd_page_in_progress; // 0 - reading from PAGE A, 1 - reading from PAGE B
-	logic [$clog2(BANK_DEPTH)-1:0] page_rd_offset;
+	logic [1:0] WrJobsDone; // Bit vector tracking when writes have been completed to pages
+	logic RdPageInProgress; // 0 - reading from PAGE A, 1 - reading from PAGE B
+	logic [$clog2(BANK_DEPTH)-1:0] PageRdOffset;
 
 	always_ff @(posedge clk) begin
 		if (rst) begin
-			wr_jobs_done <= 2'b00;
-			rd_page_in_progress <= 1'b0;
+			WrJobsDone <= 2'b00;
+			RdPageInProgress <= 1'b0;
 		end
 
 		// Track if we have completed a job
-		if (wr_addr == PAGE_OFFSET   - 1) wr_jobs_done[0] <= 1'b1;
-		if (wr_addr == 2*PAGE_OFFSET - 1) wr_jobs_done[1] <= 1'b1;
+		if (wr_addr == PAGE_OFFSET   - 1) WrJobsDone[0] <= 1'b1;
+		if (wr_addr == 2*PAGE_OFFSET - 1) WrJobsDone[1] <= 1'b1;
 
 		// Clear the relevant job once it is read
-		if ((rd_j_cnt == J-1) && (rd_i_cnt+SIMD == I) && (osb_rdy && osb_vld_d)) begin
-		       wr_jobs_done[rd_page_in_progress] <= 1'b0;
-		       rd_page_in_progress <= !rd_page_in_progress;
+		if ((RdJCnt == J-1) && (RdICnt+SIMD == I) && (OsbRdy && OsbVldD)) begin
+		       WrJobsDone[RdPageInProgress] <= 1'b0;
+		       RdPageInProgress <= !RdPageInProgress;
 		end
 	end
 
-	assign page_rd_offset = rd_page_in_progress ? PAGE_OFFSET : 'd0;
-        assign irdy = !wr_jobs_done[0] || !wr_jobs_done[1];
+	assign PageRdOffset = RdPageInProgress ? PAGE_OFFSET : 'd0;
+	assign irdy = !WrJobsDone[0] || !WrJobsDone[1];
 
 	// Write address incrementer (resets to the start once the second page is written)
 	always_ff @(posedge clk) begin
@@ -310,35 +310,35 @@ module inner_shuffle #(
 	// --------------------------------------------------------------------------
 	//    Read Address generation
 	// --------------------------------------------------------------------------
-	logic[$clog2(I)-1 : 0] rd_i_cnt;
-	logic[$clog2(J)-1 : 0] rd_j_cnt;
-	logic rd_guard;
-	assign rd_guard = !rd_page_in_progress && !wr_jobs_done[0] && !wr_jobs_done[1];
+	logic[$clog2(I)-1 : 0] RdICnt;
+	logic[$clog2(J)-1 : 0] RdJCnt;
+	logic RdGuard;
+	assign RdGuard = !RdPageInProgress && !WrJobsDone[0] && !WrJobsDone[1];
 
 	// Logic to track which iteration we are on for the read side
 	always_ff @(posedge clk) begin : readIndexLoopTracking
 		if (rst) begin
-			rd_i_cnt <= 'd0;
-			rd_j_cnt <= 'd0;
+			RdICnt <= 'd0;
+			RdJCnt <= 'd0;
 		end
 		else
-			if(osb_rdy && !rd_guard)
-				if((rd_i_cnt+SIMD) >= I) begin
-					rd_i_cnt <= 'd0;
-					if( rd_j_cnt < J-1)
-						rd_j_cnt <= rd_j_cnt + 'd1;
+			if(OsbRdy && !RdGuard)
+				if((RdICnt+SIMD) >= I) begin
+					RdICnt <= 'd0;
+					if( RdJCnt < J-1)
+						RdJCnt <= RdJCnt + 'd1;
 					else
-						rd_j_cnt <= 'd0;
+						RdJCnt <= 'd0;
 				end
 				else
-					rd_i_cnt <= rd_i_cnt + SIMD;
+					RdICnt <= RdICnt + SIMD;
 	end : readIndexLoopTracking
 
 	// Combinatorial generation of the current set of Read addresses
 	always_comb begin : bankRdAddrGen
 		for(int unsigned i=0; i<SIMD; i++) mem_banks_rd_addr[i] = 'd0; // default to avoid latch inference
 		for(int unsigned i=0; i < SIMD; i++)
-			mem_banks_rd_addr[rd_pat[i]] = ((rd_i_cnt + i)*J + rd_j_cnt)/SIMD + page_rd_offset;
+			mem_banks_rd_addr[rd_pat[i]] = ((RdICnt + i)*J + RdJCnt)/SIMD + PageRdOffset;
 	end : bankRdAddrGen
 	// --------------------------------------------------------------------------
 
@@ -349,11 +349,11 @@ module inner_shuffle #(
 
 	// Forward the current RD_PATTERN row onto the next pipeline stage
 	always_ff @(posedge clk) begin : rdPatternColForwarding
-		if (rst) osb_vld <= 0;
+		if (rst) OsbVld <= 0;
 		else begin
-			osb_vld <= !rd_guard;
-			osb_vld_d <= osb_vld;
-			if (osb_rdy && !rd_guard)
+			OsbVld <= !RdGuard;
+			OsbVldD <= OsbVld;
+			if (OsbRdy && !RdGuard)
 				for(int unsigned i=0; i<SIMD; i++)
 					rd_pattern_col_ff[i] <= rd_pat[i];
 		end
@@ -384,7 +384,7 @@ module inner_shuffle #(
 				rd_pat[i] <= rd_init_pat[i];
 		end
 		else begin
-			if (osb_rdy && !rd_guard) begin
+			if (OsbRdy && !RdGuard) begin
 				rd_counter <= rd_counter + 'd1;
 				if (rd_counter == RD_ROT_PERIOD-1) begin
 					rd_counter <= 'd0;
@@ -393,7 +393,7 @@ module inner_shuffle #(
 				end
 
 				// At the page boundary reset our RD_PATTERN lookup
-				if ((rd_j_cnt == J-1) && (rd_i_cnt+SIMD == I )) begin
+				if ((RdJCnt == J-1) && (RdICnt+SIMD == I )) begin
 					rd_counter <= 'd0;
 					for(int unsigned i=0; i<SIMD; i++)
 						rd_pat[i] <= rd_init_pat[i];
@@ -415,8 +415,8 @@ module inner_shuffle #(
 		.rst(rst),
 
 		.idat(data_reg),
-		.ivld(osb_vld),
-		.irdy(osb_rdy),
+		.ivld(OsbVld),
+		.irdy(OsbRdy),
 
 		.odat(odat),
 		.ovld(ovld),
