@@ -182,6 +182,6 @@ def test_ooc_synthesis():
     ret = eval(ret)
     assert ret["LUT"] > 0
     assert ret["FF"] > 0
-    assert ret["DSP"] == 0
+    assert ret["DSP"] > 0
     assert ret["BRAM"] > 0
     assert ret["fmax_mhz"] > 100
