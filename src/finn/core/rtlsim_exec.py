@@ -66,7 +66,7 @@ def prep_rtlsim_io_dict(model, execution_context):
             # for these functions
             i_stream_w = first_node.get_instream_width(node_inp_ind)
             i_folded_shape = first_node.get_folded_input_shape(node_inp_ind)
-        
+
         if first_node.onnx_node.op_type == "InnerShuffle_rtl":
             batchsize = 1
         else:
