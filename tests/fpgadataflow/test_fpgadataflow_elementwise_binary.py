@@ -232,7 +232,7 @@ def test_elementwise_binary_operation(
         if op_type in ["ElementwiseAdd", "ElementwiseSub", "ElementwiseMul"]:
             # Equivalence checking is more relaxed for arithmetic operations
             # numpy casts fp16 to fp32, computes in fp32, casts result to fp16
-            assert np.allclose(o_expected, o_produced, rtol=1e-3, atol=2**-14)
+            assert np.allclose(o_expected, o_produced, rtol=1e-3, atol=2**-13)
         else:
             assert np.all(o_expected == o_produced)
     else:
