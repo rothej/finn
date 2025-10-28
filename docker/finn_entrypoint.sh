@@ -63,8 +63,6 @@ mv ${FINN_ROOT}/deps/qonnx/pyproject.tmp ${FINN_ROOT}/deps/qonnx/pyproject.toml
 pip install --user -e ${FINN_ROOT}/deps/finn-experimental
 # brevitas
 pip install --user -e ${FINN_ROOT}/deps/brevitas
-# pyverilator
-pip install --user -e ${FINN_ROOT}/deps/pyverilator
 
 if [ -f "${FINN_ROOT}/setup.py" ];then
   # run pip install for finn
@@ -106,18 +104,17 @@ else
 fi
 
 if [ -z "${XILINX_VIVADO}" ]; then
-  yecho "pyxsi will be unavailable since Vivado was not found"
+  yecho "finnxsi will be unavailable since Vivado was not found"
 else
-  if [ -f "${FINN_ROOT}/deps/pyxsi/pyxsi.so" ]; then
-    gecho "Found pyxsi at ${FINN_ROOT}/deps/pyxsi/pyxsi.so"
+  if [ -f "${FINN_ROOT}/finn_xsi/xsi.so" ]; then
+    gecho "Found finnxsi at ${FINN_ROOT}/finn_xsi/xsi.so"
   else
     OLDPWD=$(pwd)
-    cd ${FINN_ROOT}/deps/pyxsi
-    touch .dockerenv
+    cd ${FINN_ROOT}/finn_xsi
     make
     cd $OLDPWD
   fi
-  export PYTHONPATH=$PYTHONPATH:${FINN_ROOT}/deps/pyxsi:${FINN_ROOT}/deps/pyxsi/py
+  export PYTHONPATH=$PYTHONPATH:${FINN_ROOT}/finn_xsi
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib/x86_64-linux-gnu/:${XILINX_VIVADO}/lib/lnx64.o
 fi
 
@@ -153,6 +150,8 @@ else
   echo "If you need to enable a beta device, ensure .Xilinx/HLS_init.tcl and/or .Xilinx/Vivado/Vivado_init.tcl are set correctly and mounted"
   echo "See https://docs.xilinx.com/r/en-US/ug835-vivado-tcl-commands/Tcl-Initialization-Scripts"
 fi
+
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$VITIS_PATH/lnx64/tools/fpo_v7_1"
 
 export PATH=$PATH:$HOME/.local/bin
 # execute the provided command(s) as root
