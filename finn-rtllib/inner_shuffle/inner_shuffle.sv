@@ -370,7 +370,7 @@ module inner_shuffle #(
 		end
 	end
 
-	assign page_rd_offset = CurrentPageRd ? PAGE_OFFSET : 0;
+	assign page_rd_offset = CurrentPageRd ? 0: PAGE_OFFSET;
 	assign irdy = !WrJobsDone[0] || !WrJobsDone[1];
 
 	// Forward the current RD_PATTERN row onto the next pipeline stage
