@@ -31,7 +31,7 @@
  */
 
 module memstream_axi #(
-	int unsigned  SETS = 1,
+	int unsigned  SETS,
 	int unsigned  DEPTH,
 	int unsigned  WIDTH,
 
@@ -153,6 +153,7 @@ module memstream_axi #(
 		assign	m_axis_0_tdata  = mem_dat;
 
 		memstream #(
+			.SETS(SETS),
 			.DEPTH(DEPTH_EFF),
 			.WIDTH(WIDTH_EFF),
 			.INIT_FILE(INIT_FILE),
@@ -274,6 +275,7 @@ module memstream_axi #(
 		end : blkStreamOut
 
 		memstream #(
+			.SETS(SETS),
 			.DEPTH(DEPTH_EFF),
 			.WIDTH(WIDTH_EFF),
 			.INIT_FILE(INIT_FILE),
