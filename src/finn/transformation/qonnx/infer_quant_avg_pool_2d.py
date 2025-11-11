@@ -317,7 +317,7 @@ class AvgPoolAndTruncv2ToQuantAvgPool(Transformation):
     """
     Convert a section of nodes of the pattern:
     AveragePool -> Trunc (v2)
-    To the FINN op: QuantAvgPool2d -> Mul
+    To the FINN op: Div -> QuantAvgPool2d -> Mul
     """
 
     def apply(self, model):
@@ -406,6 +406,8 @@ class AvgPoolAndTruncv2ToQuantAvgPool(Transformation):
 
                     # Insert scale nodes, QuantAvgPool2d node and required tensors
                     scale = model.get_initializer(t_node.input[1])
+                    # for Trunc v2 update input scale by receptive field
+                    scale = (scale * k_s * k_s).astype(scale.dtype)
                     scale_div_tensor = helper.make_tensor_value_info(
                         model.make_new_valueinfo_name(),
                         TensorProto.FLOAT,
