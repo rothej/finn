@@ -64,10 +64,13 @@ from finn.custom_op.fpgadataflow.duplicatestreams import DuplicateStreams
 from finn.custom_op.fpgadataflow.fmpadding import FMPadding
 from finn.custom_op.fpgadataflow.fmpadding_pixel import FMPadding_Pixel
 from finn.custom_op.fpgadataflow.globalaccpool import GlobalAccPool
+from finn.custom_op.fpgadataflow.inner_shuffle import InnerShuffle
 from finn.custom_op.fpgadataflow.labelselect import LabelSelect
 from finn.custom_op.fpgadataflow.lookup import Lookup
 from finn.custom_op.fpgadataflow.matrixvectoractivation import MVAU
+from finn.custom_op.fpgadataflow.outer_shuffle import OuterShuffle
 from finn.custom_op.fpgadataflow.pool import Pool
+from finn.custom_op.fpgadataflow.shuffle import Shuffle
 from finn.custom_op.fpgadataflow.split import StreamingSplit
 from finn.custom_op.fpgadataflow.streamingdataflowpartition import (
     StreamingDataflowPartition,
@@ -96,9 +99,12 @@ custom_op["DuplicateStreams"] = DuplicateStreams
 custom_op["FMPadding"] = FMPadding
 custom_op["FMPadding_Pixel"] = FMPadding_Pixel
 custom_op["GlobalAccPool"] = GlobalAccPool
+custom_op["InnerShuffle"] = InnerShuffle
 custom_op["LabelSelect"] = LabelSelect
 custom_op["Lookup"] = Lookup
+custom_op["OuterShuffle"] = OuterShuffle
 custom_op["Pool"] = Pool
+custom_op["Shuffle"] = Shuffle
 custom_op["StreamingConcat"] = StreamingConcat
 custom_op["StreamingSplit"] = StreamingSplit
 custom_op["StreamingDataWidthConverter"] = StreamingDataWidthConverter
@@ -119,9 +125,12 @@ custom_op["DuplicateStreams_v1"] = DuplicateStreams
 custom_op["FMPadding_v1"] = FMPadding
 custom_op["FMPadding_Pixel_v1"] = FMPadding_Pixel
 custom_op["GlobalAccPool_v1"] = GlobalAccPool
+custom_op["InnerShuffle_v1"] = InnerShuffle
 custom_op["LabelSelect_v1"] = LabelSelect
 custom_op["Lookup_v1"] = Lookup
+custom_op["OuterShuffle_v1"] = OuterShuffle
 custom_op["Pool_v1"] = Pool
+custom_op["Shuffle_v1"] = Shuffle
 custom_op["StreamingConcat_v1"] = StreamingConcat
 custom_op["StreamingSplit_v1"] = StreamingSplit
 custom_op["StreamingDataWidthConverter_v1"] = StreamingDataWidthConverter
