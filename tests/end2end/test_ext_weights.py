@@ -83,6 +83,7 @@ def verify_runtime_weights(folding_config_file, runtime_weights_dir):
         assert expected_file in runtime_weights_files
 
 
+@pytest.mark.xdist_group(name="end2end_ext_weights")
 @pytest.mark.end2end
 @pytest.mark.parametrize("topology", ["cnv", "tfc"])
 def test_end2end_ext_weights_download(topology):
@@ -93,6 +94,7 @@ def test_end2end_ext_weights_download(topology):
     assert os.path.isfile(get_checkpoint_name("download", topology))
 
 
+@pytest.mark.xdist_group(name="end2end_ext_weights")
 @pytest.mark.slow
 @pytest.mark.vivado
 @pytest.mark.end2end
