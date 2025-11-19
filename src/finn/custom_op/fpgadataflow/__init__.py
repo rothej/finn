@@ -41,8 +41,6 @@ def register_custom_op(cls):
     assert issubclass(cls, HWCustomOp), f"{cls} must subclass {HWCustomOp}"
     # Insert the class into the custom_op dictionary by its name
     custom_op[cls.__name__] = cls
-    # Versioning
-    custom_op[cls.__name__ + "_v1"] = cls
     # Pass through the class unmodified
     return cls
 
@@ -110,29 +108,3 @@ custom_op["StreamingSplit"] = StreamingSplit
 custom_op["StreamingDataWidthConverter"] = StreamingDataWidthConverter
 custom_op["StreamingEltwise"] = StreamingEltwise
 custom_op["UpsampleNearestNeighbour"] = UpsampleNearestNeighbour
-
-# Versioning
-custom_op["MVAU_v1"] = MVAU
-custom_op["StreamingFIFO_v1"] = StreamingFIFO
-custom_op["Thresholding_v1"] = Thresholding
-custom_op["VVAU_v1"] = VVAU
-custom_op["StreamingDataflowPartition_v1"] = StreamingDataflowPartition
-
-custom_op["AddStreams_v1"] = AddStreams
-custom_op["ChannelwiseOp_v1"] = ChannelwiseOp
-custom_op["ConvolutionInputGenerator_v1"] = ConvolutionInputGenerator
-custom_op["DuplicateStreams_v1"] = DuplicateStreams
-custom_op["FMPadding_v1"] = FMPadding
-custom_op["FMPadding_Pixel_v1"] = FMPadding_Pixel
-custom_op["GlobalAccPool_v1"] = GlobalAccPool
-custom_op["InnerShuffle_v1"] = InnerShuffle
-custom_op["LabelSelect_v1"] = LabelSelect
-custom_op["Lookup_v1"] = Lookup
-custom_op["OuterShuffle_v1"] = OuterShuffle
-custom_op["Pool_v1"] = Pool
-custom_op["Shuffle_v1"] = Shuffle
-custom_op["StreamingConcat_v1"] = StreamingConcat
-custom_op["StreamingSplit_v1"] = StreamingSplit
-custom_op["StreamingDataWidthConverter_v1"] = StreamingDataWidthConverter
-custom_op["StreamingEltwise_v1"] = StreamingEltwise
-custom_op["UpsampleNearestNeighbour_v1"] = UpsampleNearestNeighbour
