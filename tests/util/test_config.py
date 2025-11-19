@@ -8,10 +8,8 @@
 
 import pytest
 
-import json
 import onnx
 import os
-import tempfile
 from onnxscript import BOOL, FLOAT
 from onnxscript import opset13 as op
 from onnxscript import script
@@ -163,9 +161,7 @@ def test_roundtrip_export_import():
     )
     # Save in json
     config_json_file = os.environ["FINN_BUILD_DIR"] + "/original_config.json"
-    extract_model_config_to_json(
-        model, config_json_file, attrs_to_extract
-    )
+    extract_model_config_to_json(model, config_json_file, attrs_to_extract)
 
     # Modify all Im2Col nodes to different values (recursively through subgraphs)
     def modify_all_im2col_nodes(graph_proto):
@@ -196,4 +192,4 @@ def test_roundtrip_export_import():
     assert restored_config == original_config, "Config not properly restored after roundtrip"
 
     if os.path.exists(config_json_file):
-         os.remove(config_json_file)
+        os.remove(config_json_file)
