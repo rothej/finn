@@ -51,13 +51,3 @@ custom_op["MVAU_rtl"] = MVAU_rtl
 custom_op["VVAU_rtl"] = VVAU_rtl
 custom_op["Thresholding_rtl"] = Thresholding_rtl
 custom_op["InnerShuffle_rtl"] = InnerShuffle_rtl
-
-# Versioning
-custom_op["ConvolutionInputGenerator_rtl_v1"] = ConvolutionInputGenerator_rtl
-custom_op["FMPadding_rtl_v1"] = FMPadding_rtl
-custom_op["StreamingDataWidthConverter_rtl_v1"] = StreamingDataWidthConverter_rtl
-custom_op["StreamingFIFO_rtl_v1"] = StreamingFIFO_rtl
-custom_op["MVAU_rtl_v1"] = MVAU_rtl
-custom_op["VVAU_rtl_v1"] = VVAU_rtl
-custom_op["Thresholding_rtl_v1"] = Thresholding_rtl
-custom_op["InnerShuffle_rtl_v1"] = InnerShuffle_rtl

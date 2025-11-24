@@ -43,8 +43,6 @@ def register_custom_op(cls):
     assert issubclass(cls, HLSBackend), f"{cls} must subclass {HLSBackend}"
     # Insert the class into the custom_op dictionary by its name
     custom_op[cls.__name__] = cls
-    # Versioning
-    custom_op[cls.__name__ + "_v1"] = cls
     # Pass through the class unmodified
     return cls
 
@@ -100,25 +98,3 @@ custom_op["UpsampleNearestNeighbour_hls"] = UpsampleNearestNeighbour_hls
 custom_op["MVAU_hls"] = MVAU_hls
 custom_op["VVAU_hls"] = VVAU_hls
 custom_op["OuterShuffle_hls"] = OuterShuffle_hls
-
-# Versioning
-custom_op["AddStreams_hls_v1"] = AddStreams_hls
-custom_op["ChannelwiseOp_hls_v1"] = ChannelwiseOp_hls
-custom_op["CheckSum_hls_v1"] = CheckSum_hls
-custom_op["DuplicateStreams_hls_v1"] = DuplicateStreams_hls
-custom_op["FMPadding_Pixel_hls_v1"] = FMPadding_Pixel_hls
-custom_op["GlobalAccPool_hls_v1"] = GlobalAccPool_hls
-custom_op["IODMA_hls_v1"] = IODMA_hls
-custom_op["LabelSelect_hls_v1"] = LabelSelect_hls
-custom_op["Lookup_hls_v1"] = Lookup_hls
-custom_op["Pool_hls_v1"] = Pool_hls
-custom_op["StreamingConcat_hls_v1"] = StreamingConcat_hls
-custom_op["StreamingSplit_hls_v1"] = StreamingSplit_hls
-custom_op["StreamingEltwise_hls_v1"] = StreamingEltwise_hls
-custom_op["StreamingDataWidthConverter_hls_v1"] = StreamingDataWidthConverter_hls
-custom_op["Thresholding_hls_v1"] = Thresholding_hls
-custom_op["TLastMarker_hls_v1"] = TLastMarker_hls
-custom_op["UpsampleNearestNeighbour_hls_v1"] = UpsampleNearestNeighbour_hls
-custom_op["MVAU_hls_v1"] = MVAU_hls
-custom_op["VVAU_hls_v1"] = VVAU_hls
-custom_op["OuterShuffle_hls_v1"] = OuterShuffle_hls
