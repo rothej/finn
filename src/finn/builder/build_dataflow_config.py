@@ -220,7 +220,7 @@ class DataflowBuildConfig:
     verify_save_rtlsim_waveforms: Optional[bool] = False
 
     #: Manually specify the verification tolerance
-    verification_atol: Optional[float] = 1e-1 
+    verification_atol: Optional[float] = 1e-1
 
     #: (Optional) Run synthesis to generate a .dcp for the stitched-IP output product.
     #: This can make it easier to treat it as a standalone artifact without requiring
@@ -287,7 +287,8 @@ class DataflowBuildConfig:
     fifosim_input_throttle: Optional[bool] = True
 
     #: Manually specify the number of inferences for simulation-based FIFO sizing
-    fifosim_n_inferences: Optional[int] = None 
+    #: Default is 2
+    fifosim_n_inferences: Optional[int] = 2
 
     #: Enable saving waveforms from simulation-based FIFO sizing
     #: Only relevant if auto_fifo_strategy = LARGEFIFO_RTLSIM

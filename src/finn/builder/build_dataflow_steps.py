@@ -610,7 +610,7 @@ def step_set_fifo_depths(model: ModelWrapper, cfg: DataflowBuildConfig):
                     swg_exception=cfg.default_swg_exception,
                     vivado_ram_style=cfg.large_fifo_mem_style,
                     fifosim_input_throttle=cfg.fifosim_input_throttle,
-                    cfg_n_inferences=cfg.fifosim_n_inferences
+                    cfg_n_inferences=cfg.fifosim_n_inferences,
                 )
             )
             # InsertAndSetFIFODepths internally removes any shallow FIFOs
