@@ -699,7 +699,7 @@ def step_create_stitched_ip(model: ModelWrapper, cfg: DataflowBuildConfig):
         estimate_network_performance = verify_model.analysis(dataflow_performance)
         prev_liveness = get_liveness_threshold_cycles()
         os.environ["LIVENESS_THRESHOLD"] = str(
-            int(estimate_network_performance["critical_path_cycles"] * 1.1)
+            int(estimate_network_performance["critical_path_cycles"] * 1.1 + 50)
         )
         if cfg.verify_save_rtlsim_waveforms:
             verify_out_dir = cfg.output_dir + "/verification_output"
@@ -736,7 +736,7 @@ def step_measure_rtlsim_performance(model: ModelWrapper, cfg: DataflowBuildConfi
         model = model.transform(AnnotateCycles())
         perf = model.analysis(dataflow_performance)
         latency = perf["critical_path_cycles"]
-        max_iters = latency * 1.1 + 20
+        max_iters = latency * 1.1 + 50
         rtlsim_perf_dict = xsi_fifosim(model, rtlsim_bs, max_iters=max_iters)
         # keep keys consistent between the Python and C++-styles
         cycles = rtlsim_perf_dict["cycles"]

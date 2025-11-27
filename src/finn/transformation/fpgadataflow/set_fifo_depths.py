@@ -360,7 +360,7 @@ class InsertAndSetFIFODepths(Transformation):
 
         # do rtlsim in C++ for FIFO sizing
         # use the critical_path_cycles estimate to set the timeout limit for FIFO sim
-        max_iters = latency * 1.1 + 20
+        max_iters = latency * 1.1 + 50
 
         # set up rate limit for input throttling
         if self.fifosim_input_throttle:
