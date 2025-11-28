@@ -5,11 +5,11 @@ gspread==3.6.0
 importlib-resources==6.1.0
 ipython==8.12.2
 numpy==1.24.1
-onnx==1.13.0
+onnx==1.17.0
 onnxoptimizer
-onnxruntime==1.16.1
+onnxruntime==1.18.1
 pre-commit==3.3.2
-protobuf==3.20.3
+protobuf==4.25.8
 psutil==5.9.4
 pyscaffold==4.4
 scipy==1.10.1
