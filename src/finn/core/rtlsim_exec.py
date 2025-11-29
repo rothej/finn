@@ -26,6 +26,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import finn.core  # noqa: F401
+
 try:
     import finn_xsi.adapter as finnxsi
 except ModuleNotFoundError:
@@ -215,7 +217,7 @@ def rtlsim_exec_cppxsi(
         outstream_iters.append(np.prod(oshape_folded[:-1]))
 
     # retrieve the number of inputs from execution_context
-    n_inferences = execution_context[model.graph.input[0].name]
+    n_inferences = execution_context[model.get_global_in()]
     ifnames = model.get_metadata_prop("vivado_stitch_ifnames")
     assert not (
         ifnames is None

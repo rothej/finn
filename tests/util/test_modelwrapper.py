@@ -26,30 +26,33 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest
+
+import onnx
+import onnx.helper as oh
 from qonnx.core.modelwrapper import ModelWrapper
 
-
-def get_global_in(self):
-    """Get the name of the global input tensor.
-
-    Returns
-    -------
-    str
-        Name of the first (global) input tensor in the graph.
-    """
-    return self.get_global_in()
+import finn.core  # noqa: F401
 
 
-def get_global_out(self):
-    """Get the name of the global output tensor.
+@pytest.mark.util
+def test_get_global_in_out():
+    # Create a simple ONNX model for testing
+    inp = oh.make_tensor_value_info("test_input", onnx.TensorProto.FLOAT, [1, 4])
+    outp = oh.make_tensor_value_info("test_output", onnx.TensorProto.FLOAT, [1, 4])
 
-    Returns
-    -------
-    str
-        Name of the first (global) output tensor in the graph.
-    """
-    return self.get_global_out()
+    identity_node = oh.make_node("Identity", ["test_input"], ["test_output"])
 
+    graph = oh.make_graph([identity_node], "test_graph", [inp], [outp])
+    onnx_model = oh.make_model(graph, producer_name="finn-test")
+    model = ModelWrapper(onnx_model)
 
-ModelWrapper.get_global_in = get_global_in
-ModelWrapper.get_global_out = get_global_out
+    # Test get_global_in
+    assert model.get_global_in() == "test_input"
+
+    # Test get_global_out
+    assert model.get_global_out() == "test_output"
+
+    # Verify these match the old pattern
+    assert model.get_global_in() == model.graph.input[0].name
+    assert model.get_global_out() == model.graph.output[0].name
