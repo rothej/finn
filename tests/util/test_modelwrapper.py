@@ -36,23 +36,48 @@ import finn.core  # noqa: F401
 
 
 @pytest.mark.util
-def test_get_global_in_out():
-    # Create a simple ONNX model for testing
-    inp = oh.make_tensor_value_info("test_input", onnx.TensorProto.FLOAT, [1, 4])
-    outp = oh.make_tensor_value_info("test_output", onnx.TensorProto.FLOAT, [1, 4])
+@pytest.mark.parametrize(
+    "input_name,output_name",
+    [
+        ("test_input", "test_output"),
+        ("global_in", "global_out"),
+        ("inp", "outp"),
+    ],
+)
+def test_get_global_in_out(input_name, output_name):
+    """Test get_global_in() and get_global_out() helper methods.
 
-    identity_node = oh.make_node("Identity", ["test_input"], ["test_output"])
+    Verifies that the new helper methods correctly return the names
+    of global input/output tensors and match the deprecated pattern
+    they replace (.graph.input[0].name and .graph.output[0].name).
+
+    Tests with various input/output tensor names to ensure the methods
+    work correctly regardless of naming convention.
+    """
+    # Create a simple ONNX model for testing
+    inp = oh.make_tensor_value_info(input_name, onnx.TensorProto.FLOAT, [1, 4])
+    outp = oh.make_tensor_value_info(output_name, onnx.TensorProto.FLOAT, [1, 4])
+
+    identity_node = oh.make_node("Identity", [input_name], [output_name])
 
     graph = oh.make_graph([identity_node], "test_graph", [inp], [outp])
     onnx_model = oh.make_model(graph, producer_name="finn-test")
     model = ModelWrapper(onnx_model)
 
-    # Test get_global_in
-    assert model.get_global_in() == "test_input"
+    # Verify that get_global_in returns correct name and type
+    result_in = model.get_global_in()
+    assert result_in == input_name, f"Expected '{input_name}', got '{result_in}'"
+    assert isinstance(result_in, str), "get_global_in() should return a string"
 
-    # Test get_global_out
-    assert model.get_global_out() == "test_output"
+    # Same for get_global_out
+    result_out = model.get_global_out()
+    assert result_out == output_name, f"Expected '{output_name}', got '{result_out}'"
+    assert isinstance(result_out, str), "get_global_out() should return a string"
 
-    # Verify these match the old pattern
-    assert model.get_global_in() == model.graph.input[0].name
-    assert model.get_global_out() == model.graph.output[0].name
+    # Verify backward compatibility with deprecated pattern
+    assert (
+        model.get_global_in() == model.graph.input[0].name
+    ), "get_global_in() does not match deprecated .graph.input[0].name"
+    assert (
+        model.get_global_out() == model.graph.output[0].name
+    ), "get_global_out() does not match deprecated .graph.output[0].name"
