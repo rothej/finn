@@ -37,7 +37,7 @@ def get_global_in(self):
     str
         Name of the first (global) input tensor in the graph.
     """
-    return self.get_global_in()
+    return self.graph.input[0].name
 
 
 def get_global_out(self):
@@ -48,7 +48,7 @@ def get_global_out(self):
     str
         Name of the first (global) output tensor in the graph.
     """
-    return self.get_global_out()
+    return self.graph.output[0].name
 
 
 ModelWrapper.get_global_in = get_global_in
